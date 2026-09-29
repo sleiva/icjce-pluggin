@@ -1,0 +1,17 @@
+{
+  "name": "icjce",
+  "owner": {
+    "name": "sergioleivaortega",
+    "email": "sleiva@xone.es"
+  },
+  "metadata": {
+    "description": "Plugins del ICJCE para Claude Code: el experto en auditoría de cuentas en España sobre el MCP del ICJCE."
+  },
+  "plugins": [
+    {
+      "name": "icjce-auditoria",
+      "source": "./",
+      "description": "Experto en auditoría de cuentas en España con el MCP del ICJCE."
+    }
+  ]
+}

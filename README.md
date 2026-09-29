@@ -24,8 +24,6 @@ claude plugin install icjce-auditoria@icjce
 
 Actualizar a la última versión: `claude plugin update icjce-auditoria@icjce`.
 
-> El repositorio es privado: tu cuenta de GitHub necesita acceso a `sleiva/icjce-pluggin`.
-
 ## 2. Instalar el MCP del ICJCE
 
 El MCP es un servidor HTTP (Streamable HTTP) que sirve NappAI desde un flujo con el componente

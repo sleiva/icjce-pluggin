@@ -22,7 +22,8 @@ const MAX_DEPTH = 3;
 const MAX_COMBINATIONS = 4096;
 const MARKERS = /\[●\]|X{3,}|\[\s*(?:Incluir|Adaptar)[^\]]*\]|\[\^?\d+\s*\]|\[\/?RECUADRO\]/i;
 const KEYS = {
-  spec: ['schema_version', 'title', 'subtitle', 'fields', 'conditions', 'derived', 'sections', 'sources', 'include_sources_in_output'],
+  spec: ['schema_version', 'title', 'subtitle', 'fields', 'conditions', 'derived', 'batch', 'sections', 'sources', 'include_sources_in_output'],
+  batch: ['label', 'fields', 'filename'],
   field: ['id', 'label', 'type', 'required', 'value', 'help', 'options', 'when'],
   group: ['id', 'label', 'type', 'required', 'value', 'help', 'when', 'fields', 'min_rows', 'max_rows'],
   subfield: ['id', 'label', 'type', 'required', 'help', 'options'],
@@ -37,6 +38,8 @@ const KEYS = {
 const MAX_ROWS = 50;
 const MAX_SUBFIELDS = 8;
 const MAX_BLOCK_PARAGRAPHS = 10;
+const MAX_BATCH_FIELDS = 20;
+const BATCH_TYPES = TYPES_V1;
 const own = (object, key) => Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
 
 export function fail(message) { throw new Error(message); }
@@ -259,6 +262,22 @@ function checkRepeat(item, path, ctx) {
   if (item.when !== undefined) checkCondition(item.when, `${path}.when`, ctx, { depth: 1, allowRef: true });
 }
 
+function checkBatch(batch, ctx) {
+  ctx.needV2('batch');
+  if (!batch || typeof batch !== 'object' || Array.isArray(batch)) fail('batch debe ser un objeto');
+  nonempty(batch.label, 'batch.label', 120);
+  if (!Array.isArray(batch.fields) || batch.fields.length < 1 || batch.fields.length > MAX_BATCH_FIELDS || new Set(batch.fields).size !== batch.fields.length) fail(`batch.fields debe contener entre 1 y ${MAX_BATCH_FIELDS} campos sin repetir`);
+  batch.fields.forEach((id, k) => {
+    const field = ctx.fields.get(id);
+    if (!field) fail(`batch.fields[${k}]: ${id} no es un campo`);
+    if (!BATCH_TYPES.includes(field.type)) fail(`batch.fields[${k}]: el campo ${id} es ${field.type} y no puede venir del listado`);
+  });
+  nonempty(batch.filename, 'batch.filename', 200);
+  checkPlaceholders(batch.filename, 'batch.filename', ctx, true);
+  const used = [...batch.filename.matchAll(PLACEHOLDER)].map(m => m[1]);
+  if (!used.some(id => batch.fields.includes(id))) fail('batch.filename debe usar al menos un campo de batch.fields');
+}
+
 // Claves no reconocidas, como lista de mensajes `<ruta>: clave desconocida <clave>`.
 export function unknownKeys(spec) {
   const out = [];
@@ -271,6 +290,7 @@ export function unknownKeys(spec) {
   if (Array.isArray(spec.fields)) spec.fields.forEach((field, i) => check(field, field?.type === 'group' ? KEYS.group : KEYS.field, `fields[${i}]`));
   each(spec.sections, KEYS.section, 'sections');
   each(spec.sources, KEYS.source, 'sources');
+  check(spec.batch, KEYS.batch, 'batch');
   if (spec.derived && typeof spec.derived === 'object' && !Array.isArray(spec.derived)) {
     for (const [id, definition] of Object.entries(spec.derived)) {
       check(definition, KEYS.derived, `derived.${id}`);
@@ -328,6 +348,7 @@ export function validate(spec) {
       checkCondition(item.when, `${path}.cases[${j}].when`, ctx, { depth: 1, allowRef: true });
     }
   }
+  if (spec.batch !== undefined) checkBatch(spec.batch, ctx);
   checkPlaceholders(spec.title, 'title', ctx, true);
   if (spec.subtitle !== undefined) checkPlaceholders(spec.subtitle, 'subtitle', ctx, true);
   if (!Array.isArray(spec.sections) || spec.sections.length < 1 || spec.sections.length > max) fail(`sections debe contener entre 1 y ${max} secciones`);
@@ -476,6 +497,7 @@ export function reachability(spec) {
 function texts(spec) {
   const out = [['title', spec.title]];
   if (spec.subtitle) out.push(['subtitle', spec.subtitle]);
+  if (spec.batch) out.push(['batch.filename', spec.batch.filename]);
   for (const [id, definition] of Object.entries(spec.derived || {})) {
     out.push([`derived.${id}.default`, definition.default]);
     definition.cases.forEach((item, j) => out.push([`derived.${id}.cases[${j}].text`, item.text]));

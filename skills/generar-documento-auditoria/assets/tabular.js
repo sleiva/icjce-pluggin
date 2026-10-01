@@ -54,9 +54,21 @@
 
   // --- ZIP y .xlsx ------------------------------------------------------------
 
-  async function inflate(data) {
-    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-    return new Uint8Array(await new Response(stream).arrayBuffer());
+  async function inflate(data, limit) {
+    const reader = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+    const chunks = [];
+    let length = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      length += value.length;
+      if (length > limit) { await reader.cancel(); fail('El archivo descomprimido supera el máximo de 20 MB'); }
+      chunks.push(value);
+    }
+    const out = new Uint8Array(length);
+    let at = 0;
+    for (const chunk of chunks) { out.set(chunk, at); at += chunk.length; }
+    return out;
   }
 
   async function readZip(bytes) {
@@ -82,14 +94,16 @@
       const local = view.getUint32(at + 42, true);
       const name = new TextDecoder().decode(bytes.subarray(at + 46, at + 46 + nameLength));
       at += 46 + nameLength + extraLength + commentLength;
-      total += size;
-      if (total > LIMITS.unzippedBytes) fail('El archivo descomprimido supera el máximo de 20 MB');
+      if (total + size > LIMITS.unzippedBytes) fail('El archivo descomprimido supera el máximo de 20 MB');
       const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true);
       const data = bytes.subarray(start, start + compressed);
-      if (method === 0) files.set(name, data);
-      else if (method === 8) {
-        const out = await inflate(data);
-        if (out.length > size || out.length > LIMITS.unzippedBytes) fail('El archivo descomprimido supera el máximo de 20 MB');
+      if (method === 0) {
+        if (total + data.length > LIMITS.unzippedBytes) fail('El archivo descomprimido supera el máximo de 20 MB');
+        total += data.length;
+        files.set(name, data);
+      } else if (method === 8) {
+        const out = await inflate(data, LIMITS.unzippedBytes - total);
+        total += out.length;
         files.set(name, out);
       } else fail('El .xlsx usa una compresión no admitida');
     }

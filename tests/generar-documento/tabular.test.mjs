@@ -10,7 +10,7 @@ const { zipStore } = globalThis.DocExport;
 const spec = JSON.parse(await readFile(new URL('./fixtures/confirmacion-saldos.v2.json', import.meta.url), 'utf8'));
 
 // ZIP con entradas comprimidas (método 8), como los .xlsx reales.
-async function deflatedZip(entries) {
+async function deflatedZip(entries, declared) {
   const encoder = new TextEncoder();
   const parts = [];
   const central = [];
@@ -23,11 +23,11 @@ async function deflatedZip(entries) {
     const local = new Uint8Array(30);
     const lv = new DataView(local.buffer);
     lv.setUint32(0, 0x04034b50, true); lv.setUint16(8, 8, true);
-    lv.setUint32(18, data.length, true); lv.setUint32(22, raw.length, true); lv.setUint16(26, nameBytes.length, true);
+    lv.setUint32(18, data.length, true); lv.setUint32(22, declared ?? raw.length, true); lv.setUint16(26, nameBytes.length, true);
     const dir = new Uint8Array(46);
     const dv = new DataView(dir.buffer);
     dv.setUint32(0, 0x02014b50, true); dv.setUint16(10, 8, true);
-    dv.setUint32(20, data.length, true); dv.setUint32(24, raw.length, true); dv.setUint16(28, nameBytes.length, true); dv.setUint32(42, offset, true);
+    dv.setUint32(20, data.length, true); dv.setUint32(24, declared ?? raw.length, true); dv.setUint16(28, nameBytes.length, true); dv.setUint32(42, offset, true);
     parts.push(local, nameBytes, data);
     central.push(dir, nameBytes);
     offset += 30 + nameBytes.length + data.length;
@@ -79,6 +79,8 @@ test('readZip lee entradas sin comprimir y aplica los límites', async () => {
   await assert.rejects(readZip(new Uint8Array(5 * 1024 * 1024 + 1)), /supera el máximo de 5 MB/);
   const bomb = await deflatedZip([['xl/workbook.xml', 'a'.repeat(21 * 1024 * 1024)]]);
   await assert.rejects(readZip(bomb), /descomprimido supera el máximo de 20 MB/);
+  const liar = await deflatedZip([['xl/workbook.xml', 'a'.repeat(21 * 1024 * 1024)]], 100);
+  await assert.rejects(readZip(liar), /descomprimido supera el máximo de 20 MB/);
   await assert.rejects(readZip(new Uint8Array(100)), /no es un .xlsx válido/);
 });
 

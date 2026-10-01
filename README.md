@@ -75,6 +75,23 @@ otros proveedores, servidores y comentarios; crea una copia de seguridad antes d
 la configuración. Reinicia OpenCode tras instalar. El acceso OAuth se completa en el
 navegador; no se escribe ninguna API key en el repositorio.
 
+Si `opencode mcp auth icjce` termina en «Authentication failed» sin abrir el navegador,
+comprueba el registro dinámico en Auth0. Su plan puede limitar el número de aplicaciones:
+en el tenant ICJCE, Auth0 devolvió `403` al registrar otra porque había alcanzado 10.
+Puedes reutilizar una aplicación Auth0 **pública** con autenticación de cliente `None`,
+acceso delegado a la API MCP y la URL de retorno
+`http://127.0.0.1:19876/mcp/oauth/callback` autorizada. Después ejecuta:
+
+```sh
+python3 scripts/install_opencode.py --client-id TU_CLIENT_ID_PUBLICO
+opencode mcp auth icjce
+```
+
+El Client ID no es un secreto; el instalador lo añade solo a tu configuración local como
+`mcp.icjce.oauth.clientId` y conserva los demás ajustes. No añadas un Client Secret a una
+aplicación pública. El repositorio no publica un Client ID porque cada instalación puede
+usar un tenant distinto.
+
 También puedes abrir OpenCode **en la raíz de este repositorio** sin ejecutar el instalador:
 `opencode.json` configura el MCP y descubre `./skills`. Así las instrucciones funcionan
 solo en este proyecto. En OpenCode 1.x, la herramienta `skill` carga cada habilidad por

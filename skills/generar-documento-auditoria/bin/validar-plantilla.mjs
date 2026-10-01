@@ -30,7 +30,6 @@ const KEYS = {
   source: ['title', 'url'],
   derived: ['cases', 'default'],
   derivedCase: ['when', 'text'],
-  paragraph: ['text', 'when'],
   table: ['repeat', 'as', 'when', 'empty', 'columns'],
   list: ['repeat', 'as', 'when', 'empty', 'item'],
   blocks: ['repeat', 'as', 'when', 'empty', 'paragraphs'],
@@ -47,7 +46,7 @@ function nonempty(value, path, max = 5000) {
 }
 
 function plain(value) {
-  return value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 
 function distance(a, b) {

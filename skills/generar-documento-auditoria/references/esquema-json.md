@@ -88,9 +88,9 @@ Para tablas, enumeraciones y bloques que se repiten por elemento (incorrecciones
   ] }
 ```
 
-- `fields`: entre 1 y 8 subcampos de tipo `text`, `textarea`, `date` o `select` (claves `id`, `label`, `type`, `required`, `help`, `options`). Sin `when` ni `value` propios.
+- `fields`: entre 1 y 8 subcampos de tipo `text`, `textarea`, `date` o `select` (claves `id`, `label`, `type`, `required`, `help`, `options`); `options` es obligatorio solo en los `select` y no se admite en los demás. Sin `when` ni `value` propios.
 - `required` del grupo: al menos una fila con contenido; `required` de un subcampo: obligatorio en cada fila con contenido. Las filas en blanco se ignoran.
-- `min_rows` y `max_rows`: enteros entre 0 y 50 (por defecto 0 y 50). `value`: filas iniciales, como lista de objetos `{ "subcampo": "texto" }`.
+- `min_rows` y `max_rows`: enteros entre 0 y 50 (por defecto 0 y 50); `max_rows` debe ser al menos 1 y `min_rows` no puede superar a `max_rows`. `value`: filas iniciales, como lista de objetos `{ "subcampo": "texto" }`.
 - Los identificadores de subcampo no pueden repetir ningún otro identificador. Un subcampo solo puede usarse dentro de los `repeat` de su grupo; no en condiciones ni en otros textos.
 - Importes y totales son texto: la fila de total se pide como un campo normal (por ejemplo, con `when: { "field": "incorrecciones", "filled": true }`).
 
@@ -128,7 +128,7 @@ En títulos, encabezados y párrafos se usan como un campo: `{{socios}}`, `{{por
 
 ## Validación
 
-`node bin/generar-documento.mjs validate plantilla.json` detiene la generación ante cualquier error, con la ruta exacta (por ejemplo `sections[4].paragraphs[2].when.equals`), incluido un valor que no es una opción (sugiere la más parecida) o una sección que ninguna combinación de respuestas puede mostrar. Los avisos (`Aviso: …`) no bloquean pero deben revisarse: campos sin uso, opciones que ninguna condición menciona (normal si esa opción es la rama por defecto) y marcas del modelo coladas en el texto (`[●]`, `XXX`, `[Incluir…]`, `[1]`), demasiadas combinaciones para comprobar si una sección es alcanzable (revísala a mano) y, en plantillas `schema_version` 1, claves desconocidas.
+`node bin/generar-documento.mjs validate plantilla.json` detiene la generación ante cualquier error, con la ruta exacta (por ejemplo `sections[4].paragraphs[2].when.equals`), incluido un valor que no es una opción (sugiere la más parecida) o una sección que ninguna combinación de respuestas puede mostrar. Los avisos (`Aviso: …`) no bloquean pero deben revisarse: campos sin uso, opciones que ninguna condición menciona (normal si esa opción es la rama por defecto) marcas del modelo coladas en el texto (`[●]`, `XXX`, `[Incluir…]`, `[1]`), un grupo que ningún párrafo `repeat` utiliza, un subcampo que no aparece en ninguna columna ni plantilla de su grupo, demasiadas combinaciones para comprobar si una sección es alcanzable (revísala a mano) y, en plantillas `schema_version` 1, claves desconocidas.
 
 Las opciones de `select` y `multiselect` no pueden empezar ni terminar con espacios. Las claves desconocidas (por ejemplo `whn` en lugar de `when`) son un error en `schema_version` 2 y un aviso en `schema_version` 1, para que las plantillas antiguas sigan siendo válidas.
 

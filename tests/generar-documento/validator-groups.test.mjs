@@ -39,10 +39,27 @@ test('estructura del grupo', () => {
   assert.throws(() => validate(spec({ value: [{ tipo: 'C' }] })), /value\[0\]\.tipo: "C" no es una opción/);
   assert.throws(() => validate(spec({ max_rows: 1, value: [{}, {}] })), /value debe ser una lista de hasta 1 filas/);
   assert.throws(() => validate(spec({ minrows: 1 })), /fields\[1\]: clave desconocida minrows/);
+  const noFields = spec(); delete noFields.fields[1].fields;
+  assert.throws(() => validate(noFields), /fields\[1\]\.fields debe contener entre 1 y 8 subcampos/);
+  assert.throws(() => validate(spec({ fields: [{ id: 'concepto', label: 'C', type: 'text', value: 'x' }] })), /fields\[1\]\.fields\[0\]: clave desconocida value/);
+  assert.throws(() => validate(spec({ fields: [{ id: 'concepto', label: 'C', type: 'text', options: ['A'] }] })), /fields\[1\]\.fields\[0\]: solo un subcampo select admite options/);
+  assert.throws(() => validate(spec({ fields: [{ id: 'tipo', label: 'T', type: 'select' }] })), /fields\[1\]\.fields\[0\]\.options no válido/);
+  assert.throws(() => validate(spec({ min_rows: -1 })), /min_rows debe ser un entero entre 0 y 50/);
+  assert.throws(() => validate(spec({ min_rows: 1.5 })), /min_rows debe ser un entero entre 0 y 50/);
+  assert.throws(() => validate(spec({ max_rows: 2.5 })), /max_rows debe ser un entero entre 0 y 50/);
+  assert.throws(() => validate(spec({ value: 'x' })), /fields\[1\]\.value debe ser una lista de hasta 50 filas/);
+  assert.throws(() => validate(spec({ value: [['x']] })), /value\[0\] debe ser un objeto/);
+  assert.throws(() => validate(spec({ value: [{ concepto: 5 }] })), /value\[0\]\.concepto debe ser texto/);
 });
 
 test('identificadores de subcampo únicos en toda la plantilla', () => {
   assert.throws(() => validate(spec({ fields: [{ id: 'texto', label: 'T', type: 'text' }] })), /fields\[1\]\.fields\[0\]\.id no válido o duplicado/);
+  const base = { ...spec(), derived: { d1: { cases: [{ when: { field: 'texto', filled: true }, text: 'x' }], default: 'y' } }, conditions: { c1: { field: 'texto', filled: true } } };
+  assert.throws(() => validate({ ...base, fields: [base.fields[0], { id: 'filas', label: 'F', type: 'group', fields: [{ id: 'd1', label: 'D', type: 'text' }] }] }), /derived\.d1 no válido o duplicado/);
+  assert.throws(() => validate({ ...base, fields: [base.fields[0], { id: 'filas', label: 'F', type: 'group', fields: [{ id: 'c1', label: 'C', type: 'text' }] }] }), /conditions\.c1 no válido o duplicado/);
+  const twice = spec();
+  twice.fields.push({ id: 'g2', label: 'G2', type: 'group', fields: [{ id: 'concepto', label: 'C', type: 'text' }] });
+  assert.throws(() => validate(twice), /fields\[2\]\.fields\[0\]\.id no válido o duplicado/);
 });
 
 test('uso del grupo y de los subcampos', () => {
@@ -61,6 +78,9 @@ test('párrafo repeat', () => {
   assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'table', item: 'x' })), /clave desconocida item \(para as: table\)/);
   assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'list' })), /\.item: texto obligatorio/);
   assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'blocks', paragraphs: [] })), /paragraphs debe contener entre 1 y 10 textos/);
+  assert.throws(() => validate(spec({}, { repeat: 'concepto', as: 'table' })), /repeat: concepto es un subcampo, no un grupo/);
+  assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'blocks', paragraphs: Array.from({ length: 11 }, () => 'x') })), /paragraphs debe contener entre 1 y 10 textos/);
+  assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'blocks' })), /paragraphs debe contener entre 1 y 10 textos/);
   assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'table', columns: ['concepto', 'concepto'] })), /columns debe ser una lista no vacía sin repeticiones/);
   assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'table', columns: ['texto'] })), /columns\[0\]: texto no es un subcampo de filas/);
   assert.throws(() => validate(spec({}, { repeat: 'filas', as: 'list', item: '{{concepto}}', empty: 'Sin {{concepto}}' })), /empty: \{\{concepto\}\} es un subcampo/);

@@ -248,7 +248,11 @@
     const [first] = requirement(data).missing;
     if (first) {
       const input = first.focus;
-      if (input.tagName === 'BUTTON') { input.focus(); return; }
+      if (input.tagName === 'BUTTON') {
+        input.focus();
+        byId('progress-text').textContent = `Añade al menos una fila en «${first.field.label}»`;
+        return;
+      }
       input.setCustomValidity('Completa este campo');
       input.reportValidity();
       input.focus();
@@ -315,7 +319,7 @@
     const blob = docx(finalDocument);
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${finalDocument.title.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'documento'}.docx`;
+    link.download = `${finalDocument.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'documento'}.docx`;
     document.body.append(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 30000);
   });

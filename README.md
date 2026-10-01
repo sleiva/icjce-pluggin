@@ -29,7 +29,7 @@ cabeceras de autenticación. El servidor publica los metadatos OAuth en:
 https://icjce-api.nappai.tech/.well-known/oauth-protected-resource
 ```
 
-El Client ID CIMD compartido por OpenCode, Codex y el conector remoto de Claude es la
+El Client ID CIMD configurado para OpenCode es la
 URL pública del documento OAuth:
 
 ```text
@@ -37,7 +37,7 @@ https://icjce-api.nappai.tech/mcp/metadata/oauth.json
 ```
 
 El documento devuelve ese mismo valor en `client_id` y declara los callbacks de
-OpenCode, Codex y Claude. Registra la URL del documento como cliente CIMD en Auth0
+OpenCode. Registra la URL del documento como cliente CIMD en Auth0
 antes de iniciar sesión con ella. El documento está en el servicio .NET y debe
 estar desplegado y accesible por HTTPS.
 
@@ -51,14 +51,13 @@ El plugin incluye la dirección pública del MCP, sin API key. Sigue el inicio d
 Auth0 cuando Claude te pida conectar el servidor. En **Customize > Connectors** puedes
 comprobar la conexión y, si hace falta, volver a autenticarla.
 
-Al añadir el conector en **Customize > Connectors**, abre **Advanced settings** e
-introduce como Client ID `https://icjce-api.nappai.tech/mcp/metadata/oauth.json`,
-sin Client Secret. El documento CIMD incluye el callback del conector remoto de
-Claude, `https://claude.ai/api/mcp/auth_callback`. Comprueba la URL de retorno que
-muestre Claude antes de autenticar: si difiere, actualiza primero el documento y
-su registro en Auth0. El archivo `.mcp.json` del plugin también declara ese
-Client ID para los clientes que leen su configuración OAuth; en la app de Claude
-confírmalo en el conector, porque su conexión remota se gestiona desde la cuenta.
+El archivo `.mcp.json` solo declara el endpoint MCP: Claude usa su propio cliente
+OAuth. Registra en Auth0 el documento CIMD de la app de Claude,
+`https://claude.ai/oauth/mcp-oauth-client-metadata`, con el callback
+`https://claude.ai/api/mcp/auth_callback`. Si utilizas Claude Code, registra
+por separado `https://claude.ai/oauth/claude-code-client-metadata` y comprueba
+el callback local que presenta al iniciar sesión. En **Advanced settings** del
+conector no indiques un Client ID personalizado para este plugin.
 
 También puedes subir el ZIP del plugin desde **Customize > Plugins**. El plugin instalado en
 tu cuenta queda disponible en el chat de Claude y en Cowork. Si ya tenías un conector ICJCE
@@ -122,16 +121,16 @@ probada; revisa el esquema de tu versión si la actualizas.
 Referencias: [habilidades](https://opencode.ai/docs/skills) y
 [MCP remoto con OAuth](https://opencode.ai/docs/mcp-servers).
 
-## Codex: cliente CIMD compartido
+## Codex
 
-El manifiesto del plugin declara el MCP, pero Codex guarda el Client ID preinscrito y
-el callback local en `~/.codex/config.toml`. Copia la entrada de
+El manifiesto del plugin declara el MCP. Para configurarlo manualmente, copia la entrada de
 [`integrations/codex/config.toml.example`](integrations/codex/config.toml.example) a
-ese archivo, sin duplicar una entrada `mcp_servers.icjce` que ya exista. Usa el mismo
-Client ID CIMD que OpenCode y fija el callback en
-`http://127.0.0.1:51217/callback`, incluido en el documento. Después ejecuta
-`codex mcp login icjce`. El puerto no es universal: sin `callback_port`, Codex puede
-elegir otro en cada autorización.
+`~/.codex/config.toml`, sin duplicar una entrada `mcp_servers.icjce` que ya exista.
+Codex descubre OAuth mediante el servidor MCP y presenta su propio cliente CIMD:
+`https://chatgpt.com/oauth/codex/client.json`. Registra ese documento por separado en
+Auth0 y ejecuta `codex mcp login icjce`. El callback local puede usar un puerto
+variable; comprueba en Auth0 que el redirect URI real sea aceptado. No declares
+`client_id` ni un callback fijo en el plugin.
 
 ## Hermes Agent Desktop
 

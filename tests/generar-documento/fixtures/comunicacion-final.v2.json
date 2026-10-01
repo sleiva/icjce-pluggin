@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "title": "Comunicación final de prueba a {{organo}}",
+  "fields": [
+    { "id": "entidad", "label": "Entidad", "type": "text", "required": true },
+    { "id": "organo", "label": "Órgano destinatario", "type": "text", "required": true },
+    { "id": "incorrecciones", "label": "Incorrecciones no corregidas", "type": "group", "max_rows": 5, "help": "Una fila por incorrección.",
+      "fields": [
+        { "id": "concepto", "label": "Concepto", "type": "text", "required": true },
+        { "id": "efecto_resultado", "label": "Efecto en resultado", "type": "text" },
+        { "id": "efecto_patrimonio", "label": "Efecto en patrimonio neto", "type": "text" }
+      ] },
+    { "id": "total_incorrecciones", "label": "Total de incorrecciones", "type": "text", "when": { "field": "incorrecciones", "filled": true } },
+    { "id": "pendientes", "label": "Asuntos pendientes", "type": "group", "required": true, "min_rows": 1,
+      "value": [ { "asunto": "Carta de manifestaciones firmada" } ],
+      "fields": [
+        { "id": "asunto", "label": "Asunto", "type": "text", "required": true },
+        { "id": "responsable", "label": "Responsable", "type": "select", "options": ["Dirección", "Auditor"] }
+      ] },
+    { "id": "deficiencias", "label": "Deficiencias de control", "type": "group",
+      "fields": [
+        { "id": "descripcion", "label": "Descripción", "type": "textarea", "required": true },
+        { "id": "recomendacion", "label": "Recomendación", "type": "textarea" }
+      ] }
+  ],
+  "sections": [
+    { "heading": "Introducción", "paragraphs": ["Texto de prueba dirigido a {{organo}} de {{entidad}}."] },
+    { "heading": "Incorrecciones no corregidas", "when": { "field": "incorrecciones", "filled": true }, "paragraphs": [
+      "Texto de prueba previo a la tabla de incorrecciones:",
+      { "repeat": "incorrecciones", "as": "table" },
+      "Total de prueba: {{total_incorrecciones}}"
+    ] },
+    { "heading": "Asuntos pendientes", "paragraphs": [
+      "Texto de prueba previo a la lista:",
+      { "repeat": "pendientes", "as": "list", "item": "{{asunto}} (responsable: {{responsable}})" }
+    ] },
+    { "heading": "Deficiencias de control", "paragraphs": [
+      { "repeat": "deficiencias", "as": "blocks", "paragraphs": ["Deficiencia de prueba: {{descripcion}}", "Recomendación de prueba: {{recomendacion}}"],
+        "empty": "Texto de prueba: no hay deficiencias en {{entidad}}." }
+    ] }
+  ],
+  "sources": [],
+  "include_sources_in_output": false
+}

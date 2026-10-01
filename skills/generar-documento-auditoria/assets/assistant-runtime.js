@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const { buildModel, effectiveData, filledRows, isEmpty } = globalThis.DocEvaluator;
-  const { docxXml } = globalThis.DocExport;
+  const { docxPackage } = globalThis.DocExport;
   const byId = id => document.getElementById(id);
   const form = byId('data-form');
   const wrappers = {};
@@ -266,57 +266,9 @@
   document.querySelector('[data-next="1"]').addEventListener('click', () => showStep(1));
   document.querySelector('[data-step="1"]').addEventListener('click', () => showStep(1));
   document.querySelector('[data-step="2"]').addEventListener('click', () => { if (finalDocument) showStep(2); });
-  function zip(files) {
-    const encoder = new TextEncoder();
-    const chunks = [];
-    const directory = [];
-    let offset = 0;
-    const crcTable = new Uint32Array(256);
-    for (let n = 0; n < 256; n++) {
-      let c = n;
-      for (let i = 0; i < 8; i++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-      crcTable[n] = c >>> 0;
-    }
-    const crc32 = bytes => {
-      let crc = 0xffffffff;
-      for (const byte of bytes) crc = crcTable[(crc ^ byte) & 255] ^ (crc >>> 8);
-      return (crc ^ 0xffffffff) >>> 0;
-    };
-    const header = (size, signature) => { const bytes = new Uint8Array(size); new DataView(bytes.buffer).setUint32(0, signature, true); return bytes; };
-    for (const [name, content] of files) {
-      const nameBytes = encoder.encode(name);
-      const data = encoder.encode(content);
-      const crc = crc32(data);
-      const local = header(30, 0x04034b50);
-      const lv = new DataView(local.buffer);
-      lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true); lv.setUint32(14, crc, true);
-      lv.setUint32(18, data.length, true); lv.setUint32(22, data.length, true); lv.setUint16(26, nameBytes.length, true);
-      chunks.push(local, nameBytes, data);
-      const central = header(46, 0x02014b50);
-      const cv = new DataView(central.buffer);
-      cv.setUint16(4, 20, true); cv.setUint16(6, 20, true); cv.setUint16(8, 0x0800, true);
-      cv.setUint32(16, crc, true); cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
-      cv.setUint16(28, nameBytes.length, true); cv.setUint32(42, offset, true);
-      directory.push(central, nameBytes);
-      offset += local.length + nameBytes.length + data.length;
-    }
-    const directorySize = directory.reduce((sum, part) => sum + part.length, 0);
-    const end = header(22, 0x06054b50);
-    const ev = new DataView(end.buffer);
-    ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
-    ev.setUint32(12, directorySize, true); ev.setUint32(16, offset, true);
-    return new Blob([...chunks, ...directory, end], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-  }
-  function docx(output) {
-    const contentTypes = '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>';
-    const relationships = '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
-    const docRels = '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
-    const styles = '<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:style w:type="paragraph" w:styleId="Normal"><w:name w:val="Normal"/><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:pPr><w:spacing w:after="320"/></w:pPr><w:rPr><w:b/><w:sz w:val="36"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:pPr><w:spacing w:after="280"/></w:pPr><w:rPr><w:color w:val="555555"/><w:sz w:val="24"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:pPr><w:spacing w:before="240" w:after="120"/></w:pPr><w:rPr><w:b/><w:sz w:val="28"/></w:rPr></w:style></w:styles>';
-    return zip([['[Content_Types].xml', contentTypes], ['_rels/.rels', relationships], ['word/document.xml', docxXml(output)], ['word/styles.xml', styles], ['word/_rels/document.xml.rels', docRels]]);
-  }
   byId('docx-button').addEventListener('click', () => {
     if (!finalDocument) return;
-    const blob = docx(finalDocument);
+    const blob = new Blob([docxPackage(finalDocument)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `${finalDocument.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'documento'}.docx`;

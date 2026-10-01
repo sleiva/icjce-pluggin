@@ -6,7 +6,9 @@ const { evaluate, effectiveData } = globalThis.DocEvaluator;
 const ID = /^[a-z][a-z0-9_]*$/;
 const PLACEHOLDER = /\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g;
 const TYPES_V1 = ['text', 'textarea', 'date', 'select'];
-const TYPES_V2 = [...TYPES_V1, 'checkbox', 'multiselect'];
+const TYPES_V2 = [...TYPES_V1, 'checkbox', 'multiselect', 'group'];
+const SUB_TYPES = TYPES_V1;
+const REPEAT_AS = ['table', 'list', 'blocks'];
 const LEAF_OPS = ['equals', 'in', 'checked', 'includes', 'filled'];
 const OPERATORS = [...LEAF_OPS, 'all', 'any', 'not', 'ref'];
 const FIELD_OPS = {
@@ -14,7 +16,7 @@ const FIELD_OPS = {
   in: ['select', 'text'],
   checked: ['checkbox'],
   includes: ['multiselect'],
-  filled: ['text', 'textarea', 'date', 'select', 'multiselect'],
+  filled: ['text', 'textarea', 'date', 'select', 'multiselect', 'group'],
 };
 const MAX_DEPTH = 3;
 const MAX_COMBINATIONS = 4096;
@@ -22,11 +24,20 @@ const MARKERS = /\[●\]|X{3,}|\[\s*(?:Incluir|Adaptar)[^\]]*\]|\[\^?\d+\s*\]|\[
 const KEYS = {
   spec: ['schema_version', 'title', 'subtitle', 'fields', 'conditions', 'derived', 'sections', 'sources', 'include_sources_in_output'],
   field: ['id', 'label', 'type', 'required', 'value', 'help', 'options', 'when'],
+  group: ['id', 'label', 'type', 'required', 'value', 'help', 'when', 'fields', 'min_rows', 'max_rows'],
+  subfield: ['id', 'label', 'type', 'required', 'help', 'options'],
   section: ['heading', 'paragraphs', 'when'],
   source: ['title', 'url'],
   derived: ['cases', 'default'],
   derivedCase: ['when', 'text'],
+  paragraph: ['text', 'when'],
+  table: ['repeat', 'as', 'when', 'empty', 'columns'],
+  list: ['repeat', 'as', 'when', 'empty', 'item'],
+  blocks: ['repeat', 'as', 'when', 'empty', 'paragraphs'],
 };
+const MAX_ROWS = 50;
+const MAX_SUBFIELDS = 8;
+const MAX_BLOCK_PARAGRAPHS = 10;
 const own = (object, key) => Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
 
 export function fail(message) { throw new Error(message); }
@@ -112,6 +123,7 @@ function checkCondition(condition, path, ctx, opts) {
     return;
   }
   const field = ctx.fields.get(condition.field);
+  if (!field && ctx.subfields.has(condition.field)) fail(`${path}.field: ${condition.field} es un subcampo del grupo ${ctx.subfields.get(condition.field).id}; las condiciones no pueden usar subcampos`);
   if (!field) fail(`${path}.field: campo desconocido ${condition.field}`);
   if (opts.before && !opts.before.has(field.id)) fail(`${path}.field: ${field.id} debe declararse antes del campo que lo usa en when`);
   if (!FIELD_OPS[op].includes(field.type)) fail(`${path}: el operador ${op} no se admite en campos ${field.type}`);
@@ -131,12 +143,17 @@ function checkCondition(condition, path, ctx, opts) {
   if ((op === 'checked' || op === 'filled') && typeof condition[op] !== 'boolean') fail(`${path}.${op} debe ser booleano`);
 }
 
-function checkPlaceholders(text, path, ctx, allowDerived) {
+// `group`: grupo cuyos subcampos pueden usarse (plantillas de un `repeat`).
+function checkPlaceholders(text, path, ctx, allowDerived, group = null) {
   for (const [, id] of text.matchAll(PLACEHOLDER)) {
     const field = ctx.fields.get(id);
     if (field) {
-      if (field.type === 'checkbox' || field.type === 'multiselect') fail(`${path}: {{${id}}} es un campo ${field.type} y no puede insertarse como texto`);
+      if (field.type === 'checkbox' || field.type === 'multiselect' || field.type === 'group') fail(`${path}: {{${id}}} es un campo ${field.type} y no puede insertarse como texto`);
       continue;
+    }
+    if (ctx.subfields.has(id)) {
+      if (ctx.subfields.get(id) === group) continue;
+      fail(`${path}: {{${id}}} es un subcampo del grupo ${ctx.subfields.get(id).id} y solo puede usarse en sus párrafos repeat`);
     }
     if (own(ctx.spec.derived, id)) {
       if (!allowDerived) fail(`${path}: un texto derivado no puede usar otro derivado {{${id}}}`);
@@ -155,18 +172,92 @@ function checkField(field, i, ctx) {
   if (!TYPES_V1.includes(field.type)) ctx.needV2(`${path}.type ${field.type}`);
   if (field.required !== undefined && typeof field.required !== 'boolean') fail(`${path}.required debe ser booleano`);
   if (field.help !== undefined) nonempty(field.help, `${path}.help`, 400);
-  if (field.type === 'select' || field.type === 'multiselect') {
-    const options = field.options;
-    if (!Array.isArray(options) || !options.length || options.some(x => typeof x !== 'string' || !x.trim()) || new Set(options).size !== options.length) fail(`${path}.options no válido`);
-    const padded = options.find(x => x !== x.trim());
-    if (padded !== undefined) fail(`${path}.options: las opciones no pueden empezar ni terminar con espacios ("${padded}")`);
-  } else if (field.type === 'checkbox' && field.options !== undefined) fail(`${path}: un checkbox no admite options`);
+  if (field.type === 'select' || field.type === 'multiselect') checkOptions(field.options, `${path}.options`);
+  else if (field.type === 'checkbox' && field.options !== undefined) fail(`${path}: un checkbox no admite options`);
+  if (field.type === 'group') return checkGroup(field, path, ctx);
   if (field.value !== undefined) {
     if (field.type === 'checkbox') { if (typeof field.value !== 'boolean') fail(`${path}.value debe ser booleano`); }
     else if (field.type === 'multiselect') { if (!Array.isArray(field.value) || field.value.some(x => !field.options.includes(x))) fail(`${path}.value debe ser una lista de opciones`); }
     else if (typeof field.value !== 'string') fail(`${path}.value debe ser texto`);
   }
   if (field.when !== undefined) ctx.needV2(`${path}.when`);
+}
+
+function checkOptions(options, path) {
+  if (!Array.isArray(options) || !options.length || options.some(x => typeof x !== 'string' || !x.trim()) || new Set(options).size !== options.length) fail(`${path} no válido`);
+  const padded = options.find(x => x !== x.trim());
+  if (padded !== undefined) fail(`${path}: las opciones no pueden empezar ni terminar con espacios ("${padded}")`);
+}
+
+function checkGroup(group, path, ctx) {
+  if (!Array.isArray(group.fields) || group.fields.length < 1 || group.fields.length > MAX_SUBFIELDS) fail(`${path}.fields debe contener entre 1 y ${MAX_SUBFIELDS} subcampos`);
+  for (const [k, sub] of group.fields.entries()) {
+    const p = `${path}.fields[${k}]`;
+    if (!sub || typeof sub !== 'object' || Array.isArray(sub)) fail(`${p} debe ser un objeto`);
+    const extra = Object.keys(sub).find(key => !KEYS.subfield.includes(key));
+    if (extra) fail(`${p}: clave desconocida ${extra}`);
+    ctx.claim(sub.id, `${p}.id`);
+    ctx.subfields.set(sub.id, group);
+    nonempty(sub.label, `${p}.label`, 120);
+    if (!SUB_TYPES.includes(sub.type)) fail(`${p}.type no válido (subcampos: ${SUB_TYPES.join(', ')})`);
+    if (sub.required !== undefined && typeof sub.required !== 'boolean') fail(`${p}.required debe ser booleano`);
+    if (sub.help !== undefined) nonempty(sub.help, `${p}.help`, 400);
+    if (sub.type === 'select') checkOptions(sub.options, `${p}.options`);
+    else if (sub.options !== undefined) fail(`${p}: solo un subcampo select admite options`);
+  }
+  const rowsLimit = (key, fallback) => {
+    if (group[key] === undefined) return fallback;
+    if (!Number.isInteger(group[key]) || group[key] < 0 || group[key] > MAX_ROWS) fail(`${path}.${key} debe ser un entero entre 0 y ${MAX_ROWS}`);
+    return group[key];
+  };
+  const min = rowsLimit('min_rows', 0);
+  const max = rowsLimit('max_rows', MAX_ROWS);
+  if (max < 1) fail(`${path}.max_rows debe ser al menos 1`);
+  if (min > max) fail(`${path}: min_rows no puede ser mayor que max_rows`);
+  if (group.value !== undefined) {
+    if (!Array.isArray(group.value) || group.value.length > max) fail(`${path}.value debe ser una lista de hasta ${max} filas`);
+    for (const [r, row] of group.value.entries()) {
+      const p = `${path}.value[${r}]`;
+      if (!row || typeof row !== 'object' || Array.isArray(row)) fail(`${p} debe ser un objeto`);
+      for (const [key, value] of Object.entries(row)) {
+        const sub = group.fields.find(item => item.id === key);
+        if (!sub) fail(`${p}: ${key} no es un subcampo del grupo`);
+        if (typeof value !== 'string') fail(`${p}.${key} debe ser texto`);
+        if (sub.type === 'select' && value && !sub.options.includes(value)) fail(`${p}.${key}: "${value}" no es una opción`);
+      }
+    }
+  }
+  if (group.when !== undefined) ctx.needV2(`${path}.when`);
+}
+
+function checkRepeat(item, path, ctx) {
+  const group = ctx.fields.get(item.repeat);
+  if (!group && ctx.subfields.has(item.repeat)) fail(`${path}.repeat: ${item.repeat} es un subcampo, no un grupo`);
+  if (!group) fail(`${path}.repeat: campo desconocido ${item.repeat}`);
+  if (group.type !== 'group') fail(`${path}.repeat: ${item.repeat} no es un campo group`);
+  if (!REPEAT_AS.includes(item.as)) fail(`${path}.as debe ser ${REPEAT_AS.join(', ')}`);
+  const extra = Object.keys(item).find(key => !KEYS[item.as].includes(key));
+  if (extra) fail(`${path}: clave desconocida ${extra} (para as: ${item.as})`);
+  if (item.empty !== undefined) {
+    nonempty(item.empty, `${path}.empty`, 2000);
+    checkPlaceholders(item.empty, `${path}.empty`, ctx, true);
+  }
+  if (item.as === 'table' && item.columns !== undefined) {
+    if (!Array.isArray(item.columns) || !item.columns.length || new Set(item.columns).size !== item.columns.length) fail(`${path}.columns debe ser una lista no vacía sin repeticiones`);
+    item.columns.forEach((id, k) => { if (!group.fields.some(sub => sub.id === id)) fail(`${path}.columns[${k}]: ${id} no es un subcampo de ${group.id}`); });
+  }
+  if (item.as === 'list') {
+    nonempty(item.item, `${path}.item`, 2000);
+    checkPlaceholders(item.item, `${path}.item`, ctx, true, group);
+  }
+  if (item.as === 'blocks') {
+    if (!Array.isArray(item.paragraphs) || !item.paragraphs.length || item.paragraphs.length > MAX_BLOCK_PARAGRAPHS) fail(`${path}.paragraphs debe contener entre 1 y ${MAX_BLOCK_PARAGRAPHS} textos`);
+    item.paragraphs.forEach((text, k) => {
+      nonempty(text, `${path}.paragraphs[${k}]`, 10000);
+      checkPlaceholders(text, `${path}.paragraphs[${k}]`, ctx, true, group);
+    });
+  }
+  if (item.when !== undefined) checkCondition(item.when, `${path}.when`, ctx, { depth: 1, allowRef: true });
 }
 
 // Claves no reconocidas, como lista de mensajes `<ruta>: clave desconocida <clave>`.
@@ -178,7 +269,7 @@ export function unknownKeys(spec) {
   };
   const each = (list, allowed, prefix) => { if (Array.isArray(list)) list.forEach((item, i) => check(item, allowed, `${prefix}[${i}]`)); };
   check(spec, KEYS.spec, '');
-  each(spec.fields, KEYS.field, 'fields');
+  if (Array.isArray(spec.fields)) spec.fields.forEach((field, i) => check(field, field?.type === 'group' ? KEYS.group : KEYS.field, `fields[${i}]`));
   each(spec.sections, KEYS.section, 'sections');
   each(spec.sources, KEYS.source, 'sources');
   if (spec.derived && typeof spec.derived === 'object' && !Array.isArray(spec.derived)) {
@@ -198,11 +289,11 @@ export function validate(spec) {
   const max = v2 ? 80 : 50;
   const fields = new Map();
   const names = new Set();
-  const ctx = { spec, fields, needV2: path => { if (!v2) fail(`${path}: requiere schema_version 2`); } };
   const claim = (id, path) => {
     if (typeof id !== 'string' || !ID.test(id) || names.has(id)) fail(`${path} no válido o duplicado`);
     names.add(id);
   };
+  const ctx = { spec, fields, subfields: new Map(), claim, needV2: path => { if (!v2) fail(`${path}: requiere schema_version 2`); } };
   nonempty(spec.title, 'title', 180);
   if (spec.subtitle !== undefined) nonempty(spec.subtitle, 'subtitle', 220);
   if (!Array.isArray(spec.fields) || spec.fields.length < 1 || spec.fields.length > max) fail(`fields debe contener entre 1 y ${max} campos`);
@@ -254,8 +345,9 @@ export function validate(spec) {
         checkPlaceholders(paragraph, p, ctx, true);
         continue;
       }
-      ctx.needV2(`${p} (párrafo con condición)`);
-      if (!paragraph || typeof paragraph !== 'object' || Object.keys(paragraph).some(key => key !== 'text' && key !== 'when')) fail(`${p}: debe ser texto o { text, when }`);
+      ctx.needV2(`${p} (párrafo con condición o repeat)`);
+      if (paragraph && typeof paragraph === 'object' && own(paragraph, 'repeat')) { checkRepeat(paragraph, p, ctx); continue; }
+      if (!paragraph || typeof paragraph !== 'object' || Object.keys(paragraph).some(key => key !== 'text' && key !== 'when')) fail(`${p}: debe ser texto, { text, when } o { repeat, as, … }`);
       nonempty(paragraph.text, `${p}.text`, 10000);
       checkPlaceholders(paragraph.text, `${p}.text`, ctx, true);
       if (paragraph.when !== undefined) checkCondition(paragraph.when, `${p}.when`, ctx, { depth: 1, allowRef: true });
@@ -326,6 +418,7 @@ function involved(spec, conditions) {
 function domain(field, spec) {
   if (field.type === 'checkbox') return [false, true];
   if (field.type === 'select') return ['', ...field.options];
+  if (field.type === 'group') return [[], [{ [field.fields[0].id]: 'x' }]];
   if (field.type === 'text') return ['', ...citedValues(spec, field.id), '\u0000otro'];
   if (field.type === 'multiselect') {
     const cited = citedValues(spec, field.id);
@@ -358,9 +451,14 @@ export function reachability(spec) {
   const skipped = [];
   for (const [i, section] of spec.sections.entries()) {
     const base = section.when ? [section.when] : [];
-    const guarded = section.paragraphs.map(p => (typeof p === 'object' && p.when ? p.when : null));
-    const paragraphResults = guarded.map(when => {
-      if (when !== null) return reachable(spec, [...base, when]);
+    // Un repeat sin `empty` solo se ve si su grupo tiene filas.
+    const guarded = section.paragraphs.map(p => {
+      if (typeof p !== 'object') return [];
+      const local = p.when ? [p.when] : [];
+      return p.repeat && p.empty === undefined ? [...local, { field: p.repeat, filled: true }] : local;
+    });
+    const paragraphResults = guarded.map(conditions => {
+      if (conditions.length) return reachable(spec, [...base, ...conditions]);
       return base.length ? reachable(spec, base) : true;
     });
     if (paragraphResults.some(result => result === true)) {
@@ -385,7 +483,14 @@ function texts(spec) {
   }
   spec.sections.forEach((section, i) => {
     out.push([`sections[${i}].heading`, section.heading]);
-    section.paragraphs.forEach((p, j) => out.push([`sections[${i}].paragraphs[${j}]`, typeof p === 'string' ? p : p.text]));
+    section.paragraphs.forEach((p, j) => {
+      const path = `sections[${i}].paragraphs[${j}]`;
+      if (typeof p === 'string') return out.push([path, p]);
+      if (!p.repeat) return out.push([path, p.text]);
+      if (p.empty) out.push([`${path}.empty`, p.empty]);
+      if (p.item) out.push([`${path}.item`, p.item]);
+      (p.paragraphs || []).forEach((text, k) => out.push([`${path}.paragraphs[${k}]`, text]));
+    });
   });
   return out;
 }
@@ -400,7 +505,17 @@ export function lint(spec) {
   }
   const conditioned = new Set();
   allConditions(spec).forEach(condition => fieldsOf(condition, spec, conditioned));
+  const repeats = spec.sections.flatMap(section => section.paragraphs.filter(p => typeof p === 'object' && p.repeat));
   for (const field of spec.fields) {
+    if (field.type === 'group') {
+      const uses = repeats.filter(p => p.repeat === field.id);
+      if (!uses.length) { warnings.push(`campo ${field.id}: el grupo no se usa en ningún párrafo repeat`); continue; }
+      const shown = new Set(uses.flatMap(p => (p.as === 'table' ? (p.columns || field.fields.map(sub => sub.id)) : [])));
+      for (const sub of field.fields) {
+        if (!shown.has(sub.id) && !inserted.has(sub.id)) warnings.push(`campo ${field.id}: el subcampo ${sub.id} no aparece en ninguna columna ni plantilla`);
+      }
+      continue;
+    }
     if (!inserted.has(field.id) && !conditioned.has(field.id)) warnings.push(`campo ${field.id}: no se usa en ningún texto ni condición`);
     if (field.options && conditioned.has(field.id) && !inserted.has(field.id)) {
       const cited = new Set(citedValues(spec, field.id));

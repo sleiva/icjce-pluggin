@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "title": "Solicitud de confirmación de saldos de prueba",
+  "subtitle": "{{entidad}} · cierre {{fecha_cierre}}",
+  "fields": [
+    { "id": "entidad", "label": "Entidad", "type": "text", "required": true },
+    { "id": "fecha_cierre", "label": "Fecha de cierre", "type": "date", "required": true },
+    { "id": "auditor", "label": "Auditor", "type": "text", "required": true },
+    { "id": "direccion_respuesta", "label": "Dirección de respuesta", "type": "textarea", "required": true },
+    { "id": "destinatario", "label": "Destinatario", "type": "text", "required": true },
+    { "id": "direccion", "label": "Dirección", "type": "textarea", "required": true },
+    { "id": "tratamiento", "label": "Tratamiento", "type": "select", "required": true, "options": ["Sr.", "Sres."] },
+    { "id": "saldo", "label": "Saldo", "type": "text", "required": true },
+    { "id": "moneda", "label": "Moneda", "type": "select", "options": ["EUR", "Otra"] },
+    { "id": "divisa", "label": "Divisa", "type": "text", "required": true, "when": { "field": "moneda", "equals": "Otra" } }
+  ],
+  "derived": {
+    "saludo": {
+      "cases": [
+        { "when": { "field": "tratamiento", "equals": "Sr." }, "text": "Muy señor nuestro:" },
+        { "when": { "field": "tratamiento", "equals": "Sres." }, "text": "Muy señores nuestros:" }
+      ],
+      "default": "Muy señores nuestros:"
+    }
+  },
+  "batch": {
+    "label": "Destinatarios",
+    "fields": ["destinatario", "direccion", "tratamiento", "saldo", "moneda", "divisa"],
+    "filename": "Confirmación {{destinatario}}"
+  },
+  "sections": [
+    { "heading": "Destinatario", "paragraphs": ["{{destinatario}}", "{{direccion}}"] },
+    { "heading": "Solicitud", "paragraphs": [
+      "{{saludo}}",
+      "Texto de prueba: nuestros auditores, {{auditor}}, revisan las cuentas de {{entidad}} al {{fecha_cierre}}.",
+      "Texto de prueba: según nuestros registros, el saldo a esa fecha es de {{saldo}}.",
+      { "text": "Texto de prueba: importe expresado en euros.", "when": { "field": "moneda", "equals": "EUR" } },
+      { "text": "Texto de prueba: importe expresado en {{divisa}}.", "when": { "field": "moneda", "equals": "Otra" } },
+      "Texto de prueba: rogamos envíen su respuesta a {{direccion_respuesta}}."
+    ] }
+  ],
+  "sources": [],
+  "include_sources_in_output": false
+}

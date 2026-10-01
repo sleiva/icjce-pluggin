@@ -128,5 +128,12 @@
     };
   }
 
-  root.DocEvaluator = { PLACEHOLDER, emptyValue, filledRows, isEmpty, evaluate, effectiveData, buildModel };
+  // Un texto suelto (por ejemplo, el nombre de archivo de un lote) con campos y derivados.
+  function renderText(spec, raw, template, options) {
+    const markMissing = Boolean(options && options.markMissing);
+    const { data } = effectiveData(spec, raw);
+    return fill(template, data, resolveDerived(spec, data, markMissing), spec, markMissing);
+  }
+
+  root.DocEvaluator = { PLACEHOLDER, emptyValue, filledRows, isEmpty, evaluate, effectiveData, buildModel, renderText };
 })(globalThis);

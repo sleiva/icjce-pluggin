@@ -16,19 +16,40 @@ Anota la URL exacta de la fuente y cualquier aviso de vigencia. `buscar_modelos_
 
 Antes de escribir el JSON, completa una matriz interna como esta:
 
-| Apartado o pasaje del modelo | Texto fijo | Dato que aporta el auditor | Campo JSON | Obligatorio / condición | Evidencia |
-|---|---|---|---|---|---|
-| Encabezado | Fórmula de destinatario | Nombre y cargo del destinatario | `destinatario` | Siempre | URL y apartado leídos |
-| Identificación del encargo | Texto del modelo | Entidad y fecha de cierre | `entidad`, `fecha_cierre` | Siempre | URL y apartado leídos |
-| Párrafo alternativo | Redacción de la variante | Selección de variante | `tipo_opinion` | Solo si el caso lo requiere | URL y apartado leídos |
+| Apartado o pasaje del modelo | Texto fijo | Dato que aporta el auditor | Marca del modelo → pieza | Campo JSON | Obligatorio / condición | Evidencia |
+|---|---|---|---|---|---|---|
+| Encabezado | Fórmula de destinatario | Nombre y cargo del destinatario | Hueco «[Destinatario]» → `text` | `destinatario` | Siempre | URL y apartado leídos |
+| Identificación del encargo | Texto del modelo | Entidad y fecha de cierre | Huecos → `text`, `date` | `entidad`, `fecha_cierre` | Siempre | URL y apartado leídos |
+| Párrafo alternativo | Redacción de la variante | Selección de variante | «Sustituir por…» → `select` + párrafo con `when` | `tipo_opinion` | Solo si el caso lo requiere | URL y apartado leídos |
+| Cláusula opcional | Texto de la cláusula | Si procede incluirla | «Incluir solo si…» → `checkbox` + `when` | `incertidumbre` | Condición de la sección | URL y apartado leídos |
 
 La tabla es una técnica de análisis, no una lista de campos universales. Incluye anexos, tablas, firmas, periodos comparativos, salvedades y notas de cumplimentación si están en el modelo. Distingue hechos conocidos, datos pendientes y decisiones profesionales. Nunca marques una decisión profesional como predeterminada por comodidad.
 
-## 4. Traducir al JSON y comprobar cobertura
+## 4. Reconocer la variación del modelo
+
+Recorre el texto leído buscando **cada** marca de variación, no solo los huecos. Las marcas cambian de un documento a otro (corchetes, cursivas, notas al pie, recuadros, instrucciones «para el auditor»); identifícalas por su función y tradúcelas a la pieza correspondiente de `references/esquema-json.md`:
+
+| Lo que aparece en el modelo | Pieza |
+|---|---|
+| «Incluir esta sección/párrafo solo si…», «en su caso», «si procede», «cuando proceda» | `checkbox` + `when` en la sección o el párrafo; `multiselect` + `includes` si son varias de la misma familia (manifestaciones adicionales, asuntos a comunicar) |
+| «Aplicable solo a EIP / consolidadas / cotizadas / voluntarias» | `select` + `equals` o `in`; `all` / `any` cuando se cruzan dos datos (cotizada **y** sujeta a LSC) |
+| Alternativas completas («sustituir por opinión con salvedades, desfavorable…», «Alternativa A / B») | `select` + un párrafo o una sección por variante, cada uno con su `when` |
+| «[A/B]» dentro de la frase (Accionistas/Socios, la Sociedad/el Grupo, singular/plural, órgano) | `derived` con un caso por opción del `select` que lo decide |
+| Fragmento opcional en línea («[por encargo de…]») | `derived` con un caso `filled` y `default` vacío |
+| Dato que solo se pide en una variante (fundamento de la salvedad, descripción del énfasis) | campo con `when`, declarado después del campo que lo decide |
+| Huecos de datos («[ABC, S.A.]», «[XX de XXXX de 20XX]», «[describir…]») | campo `text`, `date` o `textarea` |
+| Notas al pie (`[1]`, `[^2]`), «[Publicado mediante…]», instrucciones al auditor, recuadros | se eliminan del texto; si condicionan algo, se convierten en la condición que describen |
+| Listas o tablas que se repiten (servicios, deficiencias, incorrecciones) | aún no hay pieza: `textarea` con `help` que explique el formato, y avísalo al usuario |
+| Una variación que ninguna pieza representa fielmente | pregunta al usuario o prepara asistentes separados; nunca la aproximes |
+
+Cuando la misma lógica se repite en varios sitios (por ejemplo «opinión modificada»), defínela una vez en `conditions` y úsala con `ref`.
+
+## 5. Traducir al JSON y comprobar cobertura
 
 - Conserva el orden de los apartados y el sentido de los párrafos relevantes en `sections`. Usa `{{campo}}` solo para datos variables.
 - Usa `fields` para cada dato pendiente. Una misma respuesta puede reutilizarse en varios apartados. Añade `help` para explicar formatos, unidades o referencias al encargo.
-- Usa `select` y `when` para alternativas expresas. Si varias condiciones deben combinarse o una variante requiere una redacción no representable fielmente, crea asistentes separados o pide antes la elección al usuario.
+- Representa cada marca de variación con la pieza del apartado 4 y usa `schema_version: 2` si empleas alguna pieza nueva. Si una variante requiere una redacción no representable fielmente, crea asistentes separados o pide antes la elección al usuario.
 - No copies marcas como `[●]`, `XXXXX` o instrucciones editoriales al documento final; conviértelas en campos o elimínalas si son notas del modelo, revisando que el sentido no cambie.
 - Añade la URL exacta del modelo en `sources`. Explica si se usó una fuente secundaria o si faltó el texto completo.
 - Antes de renderizar, compara cada fila de la matriz con `fields`, `sections` y condiciones. No debe quedar dato solicitado sin campo ni campo sin propósito claro en el documento.
+- Ejecuta `validate` hasta que no haya errores. Revisa cada `Aviso:` y, al entregar, explica cuáles aceptas y por qué (por ejemplo, una opción que es la rama por defecto).

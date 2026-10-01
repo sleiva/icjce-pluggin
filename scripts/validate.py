@@ -2,6 +2,7 @@
 """Validate the portable schemas and cross-client invariants without credentials."""
 import json
 import re
+import subprocess
 from pathlib import Path
 import jsonschema
 import yaml
@@ -63,11 +64,15 @@ def validate():
     for path in (ROOT / 'skills').rglob('*'):
         assert not path.is_symlink(), f'Symlink not allowed: {path}'
     renderer = ROOT / 'skills/generar-documento-auditoria'
-    for relative in ('bin/generar-documento.mjs', 'assets/assistant.html',
-                     'assets/assistant-runtime.js', 'assets/icjce-logo.png',
+    for relative in ('bin/generar-documento.mjs', 'bin/validar-plantilla.mjs',
+                     'assets/assistant.html', 'assets/assistant-runtime.js',
+                     'assets/evaluator.js', 'assets/icjce-logo.png',
                      'examples/carta-encargo.json', 'references/esquema-json.md'):
         assert (renderer / relative).is_file(), relative
-    print('OK: plugin schemas; OpenCode and Hermes MCP; metadata, marketplace, both skills and renderer assets')
+    tests = sorted(str(path) for path in (ROOT / 'tests/generar-documento').glob('*.test.mjs'))
+    assert tests, 'Faltan las pruebas del renderizador'
+    subprocess.run(['node', '--test', *tests], cwd=ROOT, check=True)
+    print('OK: plugin schemas; OpenCode and Hermes MCP; metadata, marketplace, both skills, renderer assets and tests')
 
 if __name__ == '__main__':
     validate()

@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "title": "Comunicación de prueba a {{organo}}",
+  "subtitle": "{{entidad}} · ejercicio {{ejercicio}}",
+  "fields": [
+    { "id": "entidad", "label": "Entidad", "type": "text", "required": true },
+    { "id": "ejercicio", "label": "Ejercicio", "type": "text", "required": true },
+    { "id": "forma", "label": "Forma social", "type": "select", "required": true, "options": ["S.A.", "S.L."] },
+    { "id": "eip", "label": "¿Es EIP?", "type": "select", "required": true, "options": ["Sí", "No"] },
+    { "id": "opinion", "label": "Opinión", "type": "select", "required": true, "options": ["Favorable", "Con salvedades", "Desfavorable", "Denegada"] },
+    { "id": "fundamento", "label": "Fundamento de la opinión modificada", "type": "textarea", "required": true, "when": { "ref": "opinion_modificada" } },
+    { "id": "incertidumbre", "label": "Hay incertidumbre material", "type": "checkbox" },
+    { "id": "asuntos", "label": "Asuntos a comunicar", "type": "multiselect", "options": ["Indicios de fraude", "Deficiencias significativas"] },
+    { "id": "encargante", "label": "Encargante, si no es la propia entidad", "type": "text" },
+    { "id": "organo", "label": "Órgano destinatario", "type": "text", "required": true }
+  ],
+  "conditions": {
+    "opinion_modificada": { "field": "opinion", "in": ["Con salvedades", "Desfavorable", "Denegada"] }
+  },
+  "derived": {
+    "socios": {
+      "cases": [
+        { "when": { "field": "forma", "equals": "S.L." }, "text": "socios" },
+        { "when": { "field": "forma", "equals": "S.A." }, "text": "accionistas" }
+      ],
+      "default": "accionistas"
+    },
+    "por_encargo": {
+      "cases": [ { "when": { "field": "encargante", "filled": true }, "text": " por encargo de {{encargante}}" } ],
+      "default": ""
+    }
+  },
+  "sections": [
+    { "heading": "Introducción", "paragraphs": ["Texto de prueba dirigido a los {{socios}} de {{entidad}}{{por_encargo}}."] },
+    { "heading": "Opinión", "paragraphs": [
+      { "text": "Texto de prueba de opinión favorable.", "when": { "field": "opinion", "equals": "Favorable" } },
+      { "text": "Texto de prueba de opinión modificada: {{fundamento}}", "when": { "ref": "opinion_modificada" } }
+    ] },
+    { "heading": "Incertidumbre material", "when": { "field": "incertidumbre", "checked": true }, "paragraphs": ["Texto de prueba sobre incertidumbre."] },
+    { "heading": "Asuntos comunicados", "paragraphs": [
+      { "text": "Texto de prueba sobre fraude.", "when": { "field": "asuntos", "includes": "Indicios de fraude" } },
+      { "text": "Texto de prueba sobre deficiencias.", "when": { "field": "asuntos", "includes": "Deficiencias significativas" } }
+    ] },
+    { "heading": "Requisitos EIP", "when": { "all": [ { "field": "eip", "equals": "Sí" }, { "any": [ { "ref": "opinion_modificada" }, { "field": "incertidumbre", "checked": true } ] } ] }, "paragraphs": ["Texto de prueba para EIP con opinión modificada o incertidumbre."] },
+    { "heading": "Cierre", "when": { "not": { "field": "eip", "equals": "No" } }, "paragraphs": ["Texto de prueba de cierre para EIP."] }
+  ],
+  "sources": [],
+  "include_sources_in_output": false
+}

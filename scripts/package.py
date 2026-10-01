@@ -12,7 +12,8 @@ validate()
 manifest = read('plugin.json')
 files = [ROOT / p for p in ('plugin.json', 'mcp.json', '.mcp.json',
          '.codex-plugin/plugin.json', '.claude-plugin/plugin.json',
-         '.claude-plugin/marketplace.json', 'README.md')]
+         '.claude-plugin/marketplace.json', 'README.md',
+         'integrations/codex/config.toml.example')]
 allowed_suffixes = {'.md', '.mjs', '.html', '.js', '.json', '.png'}
 files += sorted(path for path in (ROOT / 'skills').rglob('*') if path.is_file() and path.suffix in allowed_suffixes)
 for path in files:

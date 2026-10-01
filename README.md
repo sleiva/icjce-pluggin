@@ -39,6 +39,13 @@ El plugin incluye la dirección pública del MCP, sin API key. Sigue el inicio d
 Auth0 cuando Claude te pida conectar el servidor. En **Customize > Connectors** puedes
 comprobar la conexión y, si hace falta, volver a autenticarla.
 
+Para reutilizar la aplicación pública de Auth0 usada por OpenCode y Codex, al añadir
+el conector en **Customize > Connectors**, abre **Advanced settings** e introduce el Client ID
+`tpc_usH5S5S2xpb88ociR6yE63`, sin Client Secret. El conector de Claude se ejecuta en
+la nube de Anthropic: toma la URL de retorno exacta que muestre Claude y añádela a
+**Allowed Callback URLs** de esa aplicación Auth0 antes de conectar. El archivo
+`.mcp.json` del plugin no configura el Client ID del conector de Claude Desktop.
+
 También puedes subir el ZIP del plugin desde **Customize > Plugins**. El plugin instalado en
 tu cuenta queda disponible en el chat de Claude y en Cowork. Si ya tenías un conector ICJCE
 añadido manualmente, comprueba cuál usa el plugin para evitar dos conexiones al mismo servidor.
@@ -75,22 +82,26 @@ otros proveedores, servidores y comentarios; crea una copia de seguridad antes d
 la configuración. Reinicia OpenCode tras instalar. El acceso OAuth se completa en el
 navegador; no se escribe ninguna API key en el repositorio.
 
-Si `opencode mcp auth icjce` termina en «Authentication failed» sin abrir el navegador,
-comprueba el registro dinámico en Auth0. Su plan puede limitar el número de aplicaciones:
-en el tenant ICJCE, Auth0 devolvió `403` al registrar otra porque había alcanzado 10.
-Puedes reutilizar una aplicación Auth0 **pública** con autenticación de cliente `None`,
-acceso delegado a la API MCP y la URL de retorno
-`http://127.0.0.1:19876/mcp/oauth/callback` autorizada. Después ejecuta:
+`opencode.json` y el instalador usan por defecto el cliente público
+`tpc_usH5S5S2xpb88ociR6yE63` y el callback ya autorizado
+`http://127.0.0.1:51217/callback`. Para otra aplicación Auth0, indica su Client ID y
+callback al instalador con `--client-id` y `--redirect-uri`.
+
+Si `opencode mcp auth icjce` termina en «Authentication failed», comprueba que el
+Client ID del archivo coincida con la aplicación Auth0 y que su callback
+`http://127.0.0.1:51217/callback` figure en **Allowed Callback URLs**. Para usar
+otra aplicación pública de Auth0 con autenticación de cliente `None`, ejecuta:
 
 ```sh
-python3 scripts/install_opencode.py --client-id TU_CLIENT_ID_PUBLICO
+python3 scripts/install_opencode.py --client-id TU_CLIENT_ID_PUBLICO --redirect-uri URL_AUTORIZADA
 opencode mcp auth icjce
 ```
 
-El Client ID no es un secreto; el instalador lo añade solo a tu configuración local como
+El Client ID no es un secreto; el instalador lo añade a tu configuración local como
 `mcp.icjce.oauth.clientId` y conserva los demás ajustes. No añadas un Client Secret a una
-aplicación pública. El repositorio no publica un Client ID porque cada instalación puede
-usar un tenant distinto.
+aplicación pública. Si ya existe `mcp.icjce` con otra configuración OAuth, el instalador
+la conserva salvo que indiques explícitamente un Client ID; en ese caso comprueba que
+coincida antes de cambiarla.
 
 También puedes reutilizar un cliente público cuyo callback local ya esté autorizado:
 añade `--redirect-uri URL_EXISTENTE` al instalador. La URL debe coincidir exactamente con
@@ -108,6 +119,17 @@ probada; revisa el esquema de tu versión si la actualizas.
 
 Referencias: [habilidades](https://opencode.ai/docs/skills) y
 [MCP remoto con OAuth](https://opencode.ai/docs/mcp-servers).
+
+## Codex: cliente OAuth compartido
+
+El manifiesto del plugin declara el MCP, pero Codex guarda el Client ID preinscrito y
+el callback local en `~/.codex/config.toml`. Copia la entrada de
+[`integrations/codex/config.toml.example`](integrations/codex/config.toml.example) a
+ese archivo, sin duplicar una entrada `mcp_servers.icjce` que ya exista. Usa el mismo
+Client ID público que OpenCode y fija el callback en
+`http://127.0.0.1:51217/callback`, ya autorizado en Auth0. Después ejecuta
+`codex mcp login icjce`. El puerto no es universal: sin `callback_port`, Codex puede
+elegir otro en cada autorización.
 
 ## Hermes Agent Desktop
 

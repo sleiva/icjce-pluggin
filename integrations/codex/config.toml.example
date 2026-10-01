@@ -1,0 +1,9 @@
+# Añadir a ~/.codex/config.toml para reutilizar el cliente público de Auth0.
+# El callback debe estar autorizado exactamente en la aplicación Auth0.
+[mcp_servers.icjce]
+url = "https://icjce-api.nappai.tech/api/v2/mcp/6efc4933-077e-4dc0-b8d0-2a5cb46bf54a/mcp"
+
+[mcp_servers.icjce.oauth]
+client_id = "tpc_usH5S5S2xpb88ociR6yE63"
+callback_port = 51217
+callback_url = "http://127.0.0.1:51217/callback"

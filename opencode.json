@@ -4,7 +4,11 @@
     "icjce": {
       "type": "remote",
       "url": "https://icjce-api.nappai.tech/api/v2/mcp/6efc4933-077e-4dc0-b8d0-2a5cb46bf54a/mcp",
-      "enabled": true
+      "enabled": true,
+      "oauth": {
+        "clientId": "tpc_usH5S5S2xpb88ociR6yE63",
+        "redirectUri": "http://127.0.0.1:51217/callback"
+      }
     }
   },
   "skills": {

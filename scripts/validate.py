@@ -36,6 +36,10 @@ def validate():
     opencode = read('opencode.json')
     assert opencode['mcp']['icjce'] == {
         'type': 'remote', 'url': server['url'], 'enabled': True,
+        'oauth': {
+            'clientId': 'tpc_usH5S5S2xpb88ociR6yE63',
+            'redirectUri': 'http://127.0.0.1:51217/callback',
+        },
     }, 'OpenCode MCP must match the portable endpoint'
     assert opencode['skills'] == {'paths': ['./skills']}
     hermes = yaml.safe_load((ROOT / 'integrations/hermes/config.yaml.example').read_text())

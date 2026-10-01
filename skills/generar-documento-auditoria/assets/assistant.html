@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Asistente de documentos de auditoría</title>
+  <style>
+    :root { --ink:#171717; --muted:#626262; --line:#dedede; --sea:#dc0032; --sea-dark:#a90027; --cream:#f6f5f3; --paper:#fff; --warn:#9b551b; --warn-bg:#fff4e7; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--cream); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    button,input,textarea,select { font:inherit; }
+    button { cursor:pointer; }
+    .top { background:#fff; color:var(--ink); padding:20px clamp(18px,4vw,52px); display:flex; align-items:center; justify-content:space-between; gap:20px; border-top:6px solid var(--sea); border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:28px; min-width:0; }
+    .brand img { display:block; width:min(240px,28vw); height:auto; flex:none; }
+    .brand-copy { padding-left:25px; border-left:1px solid var(--line); }
+    .eyebrow { margin:0 0 5px; color:var(--sea-dark); text-transform:uppercase; letter-spacing:.14em; font-size:11px; font-weight:800; }
+    h1 { margin:0; font-size:clamp(20px,2.7vw,31px); line-height:1.2; letter-spacing:-.03em; }
+    .top p:last-child { margin:7px 0 0; color:var(--muted); }
+    .badge { border:1px solid var(--line); color:var(--muted); border-radius:99px; padding:7px 11px; font-size:12px; white-space:nowrap; }
+    .stepbar { padding:16px clamp(18px,4vw,52px); display:flex; gap:8px; border-bottom:1px solid var(--line); background:#fff; overflow:auto; }
+    .stepbar button { border:1px solid var(--line); color:var(--muted); background:#fff; padding:9px 15px; border-radius:9px; white-space:nowrap; font-weight:700; }
+    .stepbar button[aria-current="step"] { color:#fff; background:var(--sea); border-color:var(--sea); }
+    .layout { display:grid; grid-template-columns:minmax(320px,420px) minmax(0,1fr); gap:24px; padding:24px clamp(18px,4vw,52px) 52px; max-width:1600px; margin:auto; }
+    .panel { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 10px 30px #1737470b; }
+    .controls { padding:24px; align-self:start; position:sticky; top:16px; }
+    .controls h2,.preview-head h2 { margin:0 0 4px; font-size:21px; letter-spacing:-.02em; }
+    .small { color:var(--muted); font-size:13px; }
+    .progress { height:7px; border-radius:99px; background:#f4d6dd; overflow:hidden; margin:18px 0 8px; }
+    .progress > span { display:block; height:100%; width:0; background:var(--sea); transition:width .2s ease; }
+    .field { margin:18px 0; }
+    .field label { display:block; font-weight:700; margin-bottom:6px; }
+    .field label span { color:var(--warn); }
+    .field input,.field textarea,.field select { width:100%; border:1px solid #bdbdbd; border-radius:9px; padding:10px 12px; color:var(--ink); background:#fff; outline-color:var(--sea); }
+    .field textarea { min-height:100px; resize:vertical; }
+    .field .help { margin:5px 0 0; color:var(--muted); font-size:12px; }
+    .summary { border-radius:12px; padding:15px; background:#fbedf0; color:#672033; margin:18px 0; }
+    .summary.warn { background:var(--warn-bg); color:var(--warn); }
+    .summary ul { margin:8px 0 0; padding-left:20px; }
+    .source-list { padding-left:20px; overflow-wrap:anywhere; }
+    a { color:var(--sea-dark); }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+    .actions button { border-radius:9px; padding:10px 14px; border:1px solid var(--sea); font-weight:750; }
+    .primary { color:#fff; background:var(--sea); }
+    .secondary { color:var(--sea-dark); background:#fff; }
+    .actions button:disabled { opacity:.45; cursor:not-allowed; }
+    .preview-panel { padding:0; overflow:hidden; }
+    .preview-head { padding:20px 24px; display:flex; justify-content:space-between; align-items:center; gap:16px; border-bottom:1px solid var(--line); }
+    .paper-wrap { background:#eae8e6; padding:clamp(12px,3vw,34px); }
+    .paper { margin:auto; max-width:794px; min-height:900px; background:var(--paper); padding:clamp(28px,5vw,72px); box-shadow:0 8px 32px #17374718; font:15px/1.7 Georgia,"Times New Roman",serif; color:#1c2830; }
+    .paper h2 { font:700 25px/1.25 Georgia,"Times New Roman",serif; margin:0 0 8px; }
+    .paper .subtitle { color:#52636c; margin:0 0 34px; }
+    .paper h3 { font:700 16px/1.35 Georgia,"Times New Roman",serif; margin:28px 0 10px; }
+    .paper p { white-space:pre-wrap; margin:0 0 14px; }
+    .placeholder { background:#fff4d9; color:#814a1b; border-radius:3px; padding:0 2px; }
+    .paper .draft-note { margin-top:34px; padding-top:12px; border-top:1px solid #c8d3d5; color:#62727a; font:11px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    [hidden] { display:none !important; }
+    @media (max-width:900px) { .layout { grid-template-columns:1fr; } .controls { position:static; } .paper { min-height:650px; } .top { align-items:flex-start; } .brand { display:block; } .brand img { width:210px; margin-bottom:14px; } .brand-copy { padding:0; border:0; } }
+    @page { size:A4; margin:18mm; }
+    @media print {
+      body { background:#fff; }
+      .top,.stepbar,.controls,.preview-head,.draft-note { display:none !important; }
+      .layout { display:block; max-width:none; margin:0; padding:0; }
+      .preview-panel,.paper-wrap,.paper { padding:0; margin:0; border:0; box-shadow:none; background:#fff; min-height:0; max-width:none; }
+      .paper { font-size:11pt; }
+      .paper h3 { break-after:avoid; }
+      .paper p { orphans:3; widows:3; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top"><div class="brand"><img src="/*__LOGO__*/" alt="Auditores · ICJCE"><div class="brand-copy"><p class="eyebrow">Asistente de documentos · auditoría</p><h1 id="app-title"></h1><p id="app-subtitle"></p></div></div><span class="badge">Archivo autónomo · sin conexión</span></header>
+  <nav class="stepbar" aria-label="Pasos"><button type="button" data-step="1" aria-current="step">1 · Datos</button><button type="button" data-step="2">2 · Documento</button></nav>
+  <main class="layout">
+    <aside class="panel controls">
+      <div id="step-1"><h2>Completa los datos</h2><p class="small">Los datos permanecen en este navegador hasta que cierres el archivo. Revisa el documento antes de usarlo.</p><div class="progress"><span id="progress-fill"></span></div><p id="progress-text" class="small"></p><form id="data-form" novalidate></form><div class="actions"><button class="primary" type="button" id="generate-button">Generar documento →</button></div></div>
+      <div id="step-2" hidden><h2>Documento generado</h2><p class="small">Verifica datos, redacción y adecuación del modelo al encargo concreto.</p><div id="review-summary" class="summary"></div><div id="sources-wrap"><h3>Fuentes del modelo</h3><ul id="source-list" class="source-list small"></ul></div><p class="small">El DOCX se descarga directamente. Para el PDF se abre la impresión del navegador: elige «Guardar como PDF».</p><div class="actions"><button class="primary" type="button" id="docx-button">Descargar DOCX</button><button class="secondary" type="button" id="pdf-button">Exportar PDF</button></div><div class="actions"><button class="secondary" type="button" data-next="1">← Corregir datos</button></div><p class="small">Herramienta de preparación. El documento debe ser revisado por el auditor antes de su uso.</p></div>
+    </aside>
+    <section class="panel preview-panel" aria-label="Documento"><div class="preview-head"><div><h2 id="preview-title">Vista previa</h2><span id="preview-hint" class="small">Se actualiza al escribir</span></div><span id="preview-status" class="small"></span></div><div class="paper-wrap"><article id="preview" class="paper"></article></div></section>
+  </main>
+  <script>
+    /*__SPEC__*/
+    /*__RUNTIME__*/
+  </script>
+</body>
+</html>

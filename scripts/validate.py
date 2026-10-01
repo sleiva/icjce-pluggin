@@ -37,8 +37,7 @@ def validate():
     assert market['plugins'][0]['name'] == portable['name']
     assert market['plugins'][0]['source'] == './'
     skills = sorted((ROOT / 'skills').glob('*/SKILL.md'))
-    assert len(skills) == 1
-    assert skills[0].parent.name == 'consultar-icjce-mcp'
+    assert {path.parent.name for path in skills} == {'consultar-icjce-mcp', 'generar-documento-auditoria'}
     for path in skills:
         text = path.read_text()
         front = yaml.safe_load(text.split('---', 2)[1])
@@ -49,7 +48,12 @@ def validate():
             assert (path.parent / ref).is_file(), ref
     for path in (ROOT / 'skills').rglob('*'):
         assert not path.is_symlink(), f'Symlink not allowed: {path}'
-    print('OK: official Agent Plugins 1.0 schemas; metadata, marketplace, skills and references')
+    renderer = ROOT / 'skills/generar-documento-auditoria'
+    for relative in ('bin/generar-documento.mjs', 'assets/assistant.html',
+                     'assets/assistant-runtime.js', 'assets/icjce-logo.png',
+                     'examples/carta-encargo.json', 'references/esquema-json.md'):
+        assert (renderer / relative).is_file(), relative
+    print('OK: official Agent Plugins 1.0 schemas; metadata, marketplace, both skills and renderer assets')
 
 if __name__ == '__main__':
     validate()

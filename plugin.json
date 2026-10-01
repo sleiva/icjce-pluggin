@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "icjce-auditoria",
-  "version": "0.3.2",
-  "description": "Experto en auditoría de cuentas en España con el MCP del ICJCE: normativa (LAC, RLAC, RUE, NIA-ES, NIGC), independencia, calidad, contabilidad y otras actuaciones, leída en las fuentes y citada con enlace.",
+  "version": "0.4.0",
+  "description": "Asistente de auditoría en España con el MCP del ICJCE: consulta normativa y prepara documentos mediante formularios HTML exportables a DOCX o PDF.",
   "author": {
     "name": "sergioleivaortega",
     "email": "sleiva@xone.es"
@@ -19,11 +19,11 @@
     "com.openai": {
       "interface": {
         "displayName": "ICJCE Auditoría",
-        "shortDescription": "Normativa y doctrina auditora",
-        "longDescription": "Consulta normativa y doctrina de auditoría en España mediante el MCP del ICJCE. ChatGPT y la app de Claude se conectan con OAuth y el inicio de sesión de Auth0; las respuestas citan las fuentes consultadas.",
+        "shortDescription": "Auditoría y documentos",
+        "longDescription": "Consulta normativa y doctrina de auditoría en España mediante el MCP del ICJCE y prepara asistentes HTML para generar informes y cartas exportables. ChatGPT y la app de Claude se conectan con OAuth mediante Auth0.",
         "developerName": "sergioleivaortega",
         "category": "Productivity",
-        "defaultPrompt": "Consulta las fuentes del ICJCE para resolver mi duda de auditoría y cita los documentos utilizados. Si el MCP no está conectado, indícalo."
+        "defaultPrompt": "Ayúdame con una consulta de auditoría usando las fuentes del ICJCE, o prepara un asistente HTML para generar un informe o carta a partir de un modelo verificado. Cita las fuentes utilizadas."
       }
     }
   }

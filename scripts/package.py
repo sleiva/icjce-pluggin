@@ -13,7 +13,8 @@ manifest = read('plugin.json')
 files = [ROOT / p for p in ('plugin.json', 'mcp.json', '.mcp.json',
          '.codex-plugin/plugin.json', '.claude-plugin/plugin.json',
          '.claude-plugin/marketplace.json', 'README.md')]
-files += sorted((ROOT / 'skills').rglob('*.md'))
+allowed_suffixes = {'.md', '.mjs', '.html', '.js', '.json', '.png'}
+files += sorted(path for path in (ROOT / 'skills').rglob('*') if path.is_file() and path.suffix in allowed_suffixes)
 for path in files:
     if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(ROOT):
         raise ValueError(f'Unsafe package member: {path}')

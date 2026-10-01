@@ -1,9 +1,9 @@
 # ICJCE Auditoría — ChatGPT y Claude
 
-Una habilidad compartida, `consultar-icjce-mcp`, guía las respuestas a consultas de
-auditoría en España. Combina el análisis del modelo, los textos del MCP del ICJCE y la
-búsqueda web de fuentes oficiales cuando está disponible. Conserva cinco referencias
-temáticas para orientar las consultas.
+El plugin contiene dos habilidades compartidas por ChatGPT y Claude:
+
+- `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Combina el análisis del modelo, los textos del MCP del ICJCE y la búsqueda web de fuentes oficiales cuando está disponible. Conserva cinco referencias temáticas.
+- `generar-documento-auditoria` prepara un asistente HTML autónomo por conversación para rellenar un modelo de informe, carta u otro documento. El formulario se deriva de un JSON generado por el modelo. Muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
 
 Ambos clientes quedan configurados para autenticarse con OAuth mediante Auth0. El servidor
 MCP también acepta una API key para otras integraciones, pero este plugin no la solicita ni
@@ -64,6 +64,8 @@ Referencia: [autenticación de plugins en ChatGPT](https://developers.openai.com
    las URLs devueltas, sin inventarlas.
 4. Sin conexión MCP, comprueba que avisa de la limitación y que puede continuar con
    fuentes oficiales web verificadas, sin fingir una consulta al MCP.
+5. Pide preparar una carta o informe a partir de un modelo. Comprueba que se entrega un
+   HTML con formulario, botón **Generar documento**, vista del texto y exportación.
 
 La validación estática no prueba las respuestas normativas. El 01-10-2026 se comprobó que
 el endpoint público devuelve metadatos OAuth, exige autenticación con `401` y publica 9
@@ -74,7 +76,7 @@ en ChatGPT y Claude todavía requiere verificación funcional.
 
 `skills/` es la única copia consumida por ambos clientes. El backend de NappAI es el origen
 histórico de las referencias temáticas; `scripts/sincroniza.sh /ruta/al/backend` importa
-solo esas referencias y conserva la habilidad única adaptada al plugin. Revisa el diff
+solo esas referencias y conserva ambas habilidades adaptadas al plugin. Revisa el diff
 antes de publicar. No ejecutes la sincronización como parte del empaquetado.
 
 Mantén iguales los metadatos y la versión en `plugin.json`, `.codex-plugin/plugin.json` y
@@ -91,3 +93,20 @@ python3 -m venv .venv
 El empaquetador incluye solo manifiestos, documentación y skills, con los archivos ocultos
 necesarios para Claude. Excluye Git, entornos, credenciales y herramientas de desarrollo.
 Los esquemas oficiales utilizados están en `tests/schemas/` para validación sin red.
+
+## Asistente de documentos
+
+La habilidad `generar-documento-auditoria` trae un renderizador `.mjs` sin dependencias.
+La plantilla JSON describe los campos requeridos, los párrafos y las variantes del modelo.
+El modelo debe leer antes las fuentes del MCP o un modelo aportado por el usuario. El HTML
+resultante incorpora todo el código y el logo; no vuelve a consultar al MCP ni envía los
+datos rellenados. La descarga DOCX usa Office Open XML y el botón PDF abre la impresión
+del navegador para elegir **Guardar como PDF**.
+
+```sh
+node skills/generar-documento-auditoria/bin/generar-documento.mjs validate skills/generar-documento-auditoria/examples/carta-encargo.json
+node skills/generar-documento-auditoria/bin/generar-documento.mjs render skills/generar-documento-auditoria/examples/carta-encargo.json /tmp/carta-encargo.html
+```
+
+El diseño del asistente usa el logo proporcionado por el ICJCE y su paleta negra y roja.
+Los documentos exportados quedan sin logo institucional y requieren revisión del auditor.

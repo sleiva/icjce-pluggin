@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "title": "Carta de encargo de auditoría",
+  "subtitle": "Ejercicio terminado el {{fecha_cierre}}",
+  "fields": [
+    { "id": "entidad", "label": "Entidad auditada", "type": "text", "required": true },
+    { "id": "destinatario", "label": "Destinatario", "type": "text", "required": true },
+    { "id": "fecha_cierre", "label": "Fecha de cierre", "type": "date", "required": true },
+    { "id": "auditor", "label": "Auditor o firma", "type": "text", "required": true },
+    { "id": "alcance", "label": "Alcance acordado", "type": "textarea", "required": true, "help": "Adapta este texto al encargo y al marco aplicable." },
+    { "id": "tipo", "label": "Tipo de encargo", "type": "select", "required": true, "options": ["Auditoría de cuentas anuales", "Otro encargo"] }
+  ],
+  "sections": [
+    { "heading": "Destinatario", "paragraphs": ["A la atención de {{destinatario}} de {{entidad}}."] },
+    { "heading": "Objeto del encargo", "paragraphs": ["Se documenta el encargo de auditoría de {{entidad}} correspondiente al ejercicio terminado el {{fecha_cierre}}.", "Alcance acordado: {{alcance}}"] },
+    { "heading": "Identificación del auditor", "paragraphs": ["Auditor o firma: {{auditor}}."] },
+    { "heading": "Tipo de trabajo", "when": { "field": "tipo", "equals": "Otro encargo" }, "paragraphs": ["El tipo de encargo indicado requiere revisar y adaptar todas las cláusulas antes de su firma."] }
+  ],
+  "sources": [],
+  "include_sources_in_output": false
+}

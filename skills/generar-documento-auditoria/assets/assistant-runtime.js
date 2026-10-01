@@ -1,8 +1,9 @@
 (() => {
   'use strict';
+  const { buildModel, effectiveData, isEmpty } = globalThis.DocEvaluator;
   const byId = id => document.getElementById(id);
   const form = byId('data-form');
-  const values = {};
+  const wrappers = {};
   let finalDocument = null;
 
   const element = (tag, className, text) => {
@@ -11,17 +12,20 @@
     if (text !== undefined) node.textContent = text;
     return node;
   };
-  const format = (template, data, markMissing = false) => template.replace(/\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g, (_, id) => {
-    const value = (data[id] || '').trim();
-    return value || (markMissing ? `[${spec.fields.find(field => field.id === id)?.label || id}]` : '');
-  });
   const collect = () => {
-    for (const field of spec.fields) values[field.id] = byId(`field-${field.id}`).value;
-    return { ...values };
+    const data = {};
+    for (const field of spec.fields) {
+      if (field.type === 'checkbox') data[field.id] = byId(`field-${field.id}`).checked;
+      else if (field.type === 'multiselect') data[field.id] = [...form.querySelectorAll(`input[name="${field.id}"]:checked`)].map(input => input.value);
+      else data[field.id] = byId(`field-${field.id}`).value;
+    }
+    return data;
   };
-  const sectionsFor = data => spec.sections.filter(section => !section.when || data[section.when.field] === section.when.equals)
-    .map(section => ({ heading: format(section.heading, data), paragraphs: section.paragraphs.map(p => format(p, data)) }));
-  const model = data => ({ title: format(spec.title, data), subtitle: spec.subtitle ? format(spec.subtitle, data) : '', sections: sectionsFor(data), sources: spec.include_sources_in_output ? (spec.sources || []) : [] });
+  const model = (data, markMissing = false) => buildModel(spec, data, { markMissing });
+  const missingRequired = data => {
+    const { data: effective, visible } = effectiveData(spec, data);
+    return spec.fields.filter(field => field.required && visible[field.id] && isEmpty(field, effective[field.id]));
+  };
 
   function showStep(step) {
     byId('step-1').hidden = step !== 1;
@@ -37,9 +41,11 @@
 
   function renderPreview(documentModel = null) {
     const data = collect();
+    const { visible } = effectiveData(spec, data);
+    for (const field of spec.fields) wrappers[field.id].hidden = !visible[field.id];
     const preview = byId('preview');
     preview.replaceChildren();
-    const output = documentModel || model(data);
+    const output = documentModel || model(data, true);
     preview.append(element('h2', '', output.title));
     if (output.subtitle) preview.append(element('p', 'subtitle', output.subtitle));
     for (const section of output.sections) {
@@ -51,38 +57,71 @@
       for (const source of output.sources) preview.append(element('p', '', `${source.title}: ${source.url}`));
     }
     preview.append(element('p', 'draft-note', 'Documento de trabajo sujeto a revisión profesional.'));
-    const required = spec.fields.filter(field => field.required);
-    const complete = required.filter(field => data[field.id]?.trim()).length;
+    const required = spec.fields.filter(field => field.required && visible[field.id]);
+    const missing = missingRequired(data).length;
+    const complete = required.length - missing;
     byId('progress-fill').style.width = `${required.length ? Math.round(complete / required.length * 100) : 100}%`;
     byId('progress-text').textContent = `${complete} de ${required.length} campos obligatorios completados`;
-    byId('preview-status').textContent = documentModel ? 'Listo para exportar' : `${spec.sections.length} secciones del modelo`;
+    byId('preview-status').textContent = documentModel ? 'Listo para exportar' : `${output.stats.included} de ${output.stats.total} secciones incluidas según tus respuestas`;
+  }
+
+  function checkLabel(input, text) {
+    const label = element('label', 'check');
+    label.append(input, document.createTextNode(` ${text}`));
+    return label;
   }
 
   for (const field of spec.fields) {
-    const wrapper = element('div', 'field');
-    const label = element('label', '', field.label);
-    label.htmlFor = `field-${field.id}`;
-    if (field.required) label.append(element('span', '', ' *'));
-    let input;
-    if (field.type === 'textarea') input = element('textarea');
-    else if (field.type === 'select') {
-      input = element('select');
-      const empty = element('option', '', 'Selecciona una opción');
-      empty.value = '';
-      input.append(empty);
-      for (const option of field.options) {
-        const item = element('option', '', option);
-        item.value = option;
-        input.append(item);
+    const wrapper = element(field.type === 'multiselect' ? 'fieldset' : 'div', 'field');
+    wrappers[field.id] = wrapper;
+    if (field.type === 'checkbox') {
+      const input = element('input');
+      input.type = 'checkbox';
+      input.id = `field-${field.id}`;
+      input.name = field.id;
+      input.checked = field.value === true;
+      const label = checkLabel(input, field.label);
+      if (field.required) label.append(element('span', '', ' *'));
+      wrapper.append(label);
+    } else if (field.type === 'multiselect') {
+      wrapper.id = `field-${field.id}`;
+      const legend = element('legend', '', field.label);
+      if (field.required) legend.append(element('span', '', ' *'));
+      wrapper.append(legend);
+      for (const [k, option] of field.options.entries()) {
+        const input = element('input');
+        input.type = 'checkbox';
+        input.id = `field-${field.id}-${k}`;
+        input.name = field.id;
+        input.value = option;
+        input.checked = Array.isArray(field.value) && field.value.includes(option);
+        wrapper.append(checkLabel(input, option));
       }
-    } else input = element('input');
-    if (field.type !== 'select' && field.type !== 'textarea') input.type = field.type;
-    input.id = `field-${field.id}`;
-    input.name = field.id;
-    input.required = Boolean(field.required);
-    input.value = field.value || '';
-    if (field.type === 'textarea') input.rows = 4;
-    wrapper.append(label, input);
+    } else {
+      const label = element('label', '', field.label);
+      label.htmlFor = `field-${field.id}`;
+      if (field.required) label.append(element('span', '', ' *'));
+      let input;
+      if (field.type === 'textarea') input = element('textarea');
+      else if (field.type === 'select') {
+        input = element('select');
+        const empty = element('option', '', 'Selecciona una opción');
+        empty.value = '';
+        input.append(empty);
+        for (const option of field.options) {
+          const item = element('option', '', option);
+          item.value = option;
+          input.append(item);
+        }
+      } else input = element('input');
+      if (field.type !== 'select' && field.type !== 'textarea') input.type = field.type;
+      input.id = `field-${field.id}`;
+      input.name = field.id;
+      input.required = Boolean(field.required);
+      input.value = field.value || '';
+      if (field.type === 'textarea') input.rows = 4;
+      wrapper.append(label, input);
+    }
     if (field.help) wrapper.append(element('p', 'help', field.help));
     form.append(wrapper);
   }
@@ -103,24 +142,23 @@
   form.addEventListener('input', () => { finalDocument = null; renderPreview(); });
   form.addEventListener('change', () => { finalDocument = null; renderPreview(); });
   byId('generate-button').addEventListener('click', () => {
-    for (const field of spec.fields) {
-      const input = byId(`field-${field.id}`);
-      if (field.required && !input.value.trim()) {
-        input.setCustomValidity('Completa este campo');
-        input.reportValidity();
-        input.focus();
-        input.setCustomValidity('');
-        return;
-      }
+    const data = collect();
+    const [first] = missingRequired(data);
+    if (first) {
+      const input = first.type === 'multiselect' ? form.querySelector(`input[name="${first.id}"]`) : byId(`field-${first.id}`);
+      input.setCustomValidity('Completa este campo');
+      input.reportValidity();
+      input.focus();
+      input.setCustomValidity('');
+      return;
     }
-    finalDocument = model(collect());
+    finalDocument = model(data);
     byId('review-summary').textContent = 'Documento generado. Comprueba el contenido y descarga el formato que necesites.';
     showStep(2);
   });
   document.querySelector('[data-next="1"]').addEventListener('click', () => showStep(1));
   document.querySelector('[data-step="1"]').addEventListener('click', () => showStep(1));
   document.querySelector('[data-step="2"]').addEventListener('click', () => { if (finalDocument) showStep(2); });
-
   const xml = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
   const paragraphXml = (value, style = '') => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ''}<w:r><w:t xml:space="preserve">${xml(value)}</w:t></w:r></w:p>`;
   function docxXml(output) {

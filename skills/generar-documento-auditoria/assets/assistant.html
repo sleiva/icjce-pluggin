@@ -34,6 +34,11 @@
     .field label span { color:var(--warn); }
     .field input,.field textarea,.field select { width:100%; border:1px solid #bdbdbd; border-radius:9px; padding:10px 12px; color:var(--ink); background:#fff; outline-color:var(--sea); }
     .field textarea { min-height:100px; resize:vertical; }
+    .field input[type="checkbox"] { width:auto; margin:3px 0 0; flex:none; }
+    .field label.check { display:flex; gap:8px; align-items:flex-start; font-weight:600; margin:6px 0; }
+    fieldset.field { border:0; padding:0; min-width:0; }
+    fieldset.field legend { font-weight:700; padding:0; margin-bottom:6px; }
+    fieldset.field legend span { color:var(--warn); }
     .field .help { margin:5px 0 0; color:var(--muted); font-size:12px; }
     .summary { border-radius:12px; padding:15px; background:#fbedf0; color:#672033; margin:18px 0; }
     .summary.warn { background:var(--warn-bg); color:var(--warn); }
@@ -81,6 +86,7 @@
   </main>
   <script>
     /*__SPEC__*/
+    /*__EVALUATOR__*/
     /*__RUNTIME__*/
   </script>
 </body>

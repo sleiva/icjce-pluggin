@@ -26,6 +26,7 @@ Cada campo usa `id` único en minúsculas (`[a-z][a-z0-9_]*`), `label` y `type`.
 | `select` | texto | Exige `options` (textos únicos). |
 | `checkbox` (v2) | sí / no | Sin `options`. Con `required: true` obliga a marcarla («confirmo que…»). |
 | `multiselect` (v2) | lista de opciones | Exige `options`. Se muestra como un grupo de casillas. |
+| `group` (v2) | lista de filas | Campo repetible con subcampos; ver «Grupos repetibles». Solo admite la condición `filled` (al menos una fila con contenido). |
 
 Un campo puede llevar `when` (v2): si la condición no se cumple, el campo no se muestra, deja de ser obligatorio y vale vacío en condiciones y textos. La condición de un campo solo puede usar campos **declarados antes** que él.
 
@@ -50,7 +51,7 @@ Una condición es un objeto con un único operador. Se admite en campos, seccion
 | `equals`, `in` | `select`, `text` |
 | `checked` | `checkbox` |
 | `includes` | `multiselect` |
-| `filled` | todos salvo `checkbox` |
+| `filled` | todos salvo `checkbox` (incluido `group`) |
 
 - Los valores de `equals`, `in` e `includes` deben coincidir **literalmente** con una opción del campo (en campos con opciones).
 - `all` y `any` necesitan al menos dos condiciones. El anidamiento máximo es de tres niveles, contando lo que aporte un `ref`.
@@ -74,6 +75,39 @@ Cada sección usa `heading`, `paragraphs` y, opcionalmente, `when`. Cada párraf
   { "text": "Excepto por los efectos de … {{fundamento}}", "when": { "ref": "opinion_modificada" } }
 ] }
 ```
+
+## Grupos repetibles (v2)
+
+Para tablas, enumeraciones y bloques que se repiten por elemento (incorrecciones, honorarios, deficiencias, asuntos pendientes). El campo guarda las filas; un párrafo `repeat` decide cómo se presentan.
+
+```json
+{ "id": "incorrecciones", "label": "Incorrecciones no corregidas", "type": "group", "max_rows": 20,
+  "fields": [
+    { "id": "concepto", "label": "Concepto", "type": "text", "required": true },
+    { "id": "efecto_resultado", "label": "Efecto en resultado", "type": "text" }
+  ] }
+```
+
+- `fields`: entre 1 y 8 subcampos de tipo `text`, `textarea`, `date` o `select` (claves `id`, `label`, `type`, `required`, `help`, `options`). Sin `when` ni `value` propios.
+- `required` del grupo: al menos una fila con contenido; `required` de un subcampo: obligatorio en cada fila con contenido. Las filas en blanco se ignoran.
+- `min_rows` y `max_rows`: enteros entre 0 y 50 (por defecto 0 y 50). `value`: filas iniciales, como lista de objetos `{ "subcampo": "texto" }`.
+- Los identificadores de subcampo no pueden repetir ningún otro identificador. Un subcampo solo puede usarse dentro de los `repeat` de su grupo; no en condiciones ni en otros textos.
+- Importes y totales son texto: la fila de total se pide como un campo normal (por ejemplo, con `when: { "field": "incorrecciones", "filled": true }`).
+
+Párrafo `repeat`, en cualquier lugar de `paragraphs`:
+
+```json
+{ "repeat": "incorrecciones", "as": "table", "columns": ["concepto", "efecto_resultado"] }
+{ "repeat": "pendientes", "as": "list", "item": "{{asunto}} (responsable: {{responsable}})" }
+{ "repeat": "deficiencias", "as": "blocks", "paragraphs": ["{{descripcion}}", "Recomendación: {{recomendacion}}"],
+  "empty": "No hemos identificado deficiencias significativas." }
+```
+
+- `table`: una tabla con los subcampos como columnas (por defecto todos, en su orden; `columns` elige y ordena). Los encabezados son las etiquetas.
+- `list`: una viñeta por fila con la plantilla `item`.
+- `blocks`: los textos de `paragraphs` (entre 1 y 10) para cada fila.
+- `item` y `paragraphs` admiten los subcampos del grupo y los campos y derivados globales. `empty` (opcional) es el texto si no hay filas y solo admite campos y derivados globales; sin `empty`, el párrafo desaparece cuando no hay filas.
+- Admite `when` como cualquier párrafo.
 
 ## Textos derivados (v2)
 

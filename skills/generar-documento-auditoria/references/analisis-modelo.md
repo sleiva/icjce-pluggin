@@ -39,7 +39,10 @@ Recorre el texto leído buscando **cada** marca de variación, no solo los hueco
 | Dato que solo se pide en una variante (fundamento de la salvedad, descripción del énfasis) | campo con `when`, declarado después del campo que lo decide |
 | Huecos de datos («[ABC, S.A.]», «[XX de XXXX de 20XX]», «[describir…]») | campo `text`, `date` o `textarea` |
 | Notas al pie (`[1]`, `[^2]`), «[Publicado mediante…]», instrucciones al auditor, recuadros | se eliminan del texto; si condicionan algo, se convierten en la condición que describen |
-| Listas o tablas que se repiten (servicios, deficiencias, incorrecciones) | aún no hay pieza: `textarea` con `help` que explique el formato, y avísalo al usuario |
+| Tabla con columnas fijas y filas que rellena el auditor (incorrecciones, honorarios, amenazas y salvaguardas) | `group` con un subcampo por columna + `repeat` con `as: "table"` |
+| Enumeración de elementos («[enumerar documentos]», asuntos pendientes) | `group` + `repeat` con `as: "list"` |
+| Bloque de párrafos por elemento (cada deficiencia con su recomendación, cada carta de abogado) | `group` + `repeat` con `as: "blocks"`; si el modelo prevé un texto para cuando no hay elementos, ponlo en `empty` |
+| Fila de total o importes calculados | campo `text` normal (aún no hay cálculos), con `when` `filled` sobre el grupo si solo aplica cuando hay filas |
 | Una variación que ninguna pieza representa fielmente | pregunta al usuario o prepara asistentes separados; nunca la aproximes |
 
 Cuando la misma lógica se repite en varios sitios (por ejemplo «opinión modificada»), defínela una vez en `conditions` y úsala con `ref`.

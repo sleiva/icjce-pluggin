@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const { buildModel, effectiveData, isEmpty } = globalThis.DocEvaluator;
+  const { docxXml } = globalThis.DocExport;
   const byId = id => document.getElementById(id);
   const form = byId('data-form');
   const wrappers = {};
@@ -159,21 +160,6 @@
   document.querySelector('[data-next="1"]').addEventListener('click', () => showStep(1));
   document.querySelector('[data-step="1"]').addEventListener('click', () => showStep(1));
   document.querySelector('[data-step="2"]').addEventListener('click', () => { if (finalDocument) showStep(2); });
-  const xml = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-  const paragraphXml = (value, style = '') => `<w:p>${style ? `<w:pPr><w:pStyle w:val="${style}"/></w:pPr>` : ''}<w:r><w:t xml:space="preserve">${xml(value)}</w:t></w:r></w:p>`;
-  function docxXml(output) {
-    const parts = [paragraphXml(output.title, 'Title')];
-    if (output.subtitle) parts.push(paragraphXml(output.subtitle, 'Subtitle'));
-    for (const section of output.sections) {
-      parts.push(paragraphXml(section.heading, 'Heading1'));
-      for (const text of section.paragraphs) parts.push(paragraphXml(text));
-    }
-    if (output.sources.length) {
-      parts.push(paragraphXml('Fuentes', 'Heading1'));
-      for (const source of output.sources) parts.push(paragraphXml(`${source.title}: ${source.url}`));
-    }
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${parts.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr></w:body></w:document>`;
-  }
   function zip(files) {
     const encoder = new TextEncoder();
     const chunks = [];

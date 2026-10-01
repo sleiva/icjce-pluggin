@@ -16,7 +16,7 @@
   let selected = 0;
   const batchFields = new Set(spec.batch ? spec.batch.fields : []);
   const inBatch = () => mode === 'batch';
-  const batchState = () => (inBatch() && batchTable ? mapRows(spec, batchTable, collect()) : null);
+  const batchState = () => (inBatch() && batchTable ? mapRows(spec, batchTable, commonData()) : null);
   const currentFinal = () => (finalDocuments ? finalDocuments[selected].output : finalDocument);
   const filenames = (state, common) => {
     const used = new Set();
@@ -45,6 +45,12 @@
       else if (field.type === 'group') data[field.id] = groupRows(field).map(card => Object.fromEntries(field.fields.map(sub => [sub.id, card.querySelector(`[data-sub="${sub.id}"]`).value])));
       else data[field.id] = byId(`field-${field.id}`).value;
     }
+    return data;
+  };
+  // En modo lote, los campos del lote solo vienen del listado: se vacían en los datos comunes.
+  const commonData = () => {
+    const data = collect();
+    if (inBatch()) for (const id of batchFields) data[id] = '';
     return data;
   };
   const model = (data, markMissing = false) => buildModel(spec, data, { markMissing });
@@ -115,7 +121,7 @@
   }
 
   function renderPreview(documentModel = null) {
-    const data = collect();
+    const data = commonData();
     const { visible } = effectiveData(spec, data);
     for (const field of spec.fields) wrappers[field.id].hidden = !visible[field.id] || (inBatch() && batchFields.has(field.id));
     const state = batchState();
@@ -398,7 +404,7 @@
   form.addEventListener('input', () => { finalDocument = null; finalDocuments = null; renderPreview(); });
   form.addEventListener('change', () => { finalDocument = null; finalDocuments = null; renderPreview(); });
   byId('generate-button').addEventListener('click', () => {
-    const data = collect();
+    const data = commonData();
     const [first] = requirement(data).missing;
     if (first) {
       const input = first.focus;

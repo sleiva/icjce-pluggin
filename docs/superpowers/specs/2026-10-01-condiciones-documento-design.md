@@ -39,7 +39,7 @@ Cualquier campo admite `when` (condición). Si la condición no se cumple, el ca
 2. no es obligatorio;
 3. se evalúa como vacío en condiciones, derivados y texto (aunque conserve en pantalla lo escrito para no perderlo si vuelve a mostrarse).
 
-La condición `when` de un campo no puede referenciar el propio campo.
+La condición `when` de un campo solo puede referenciar campos declarados antes que él (evita ciclos y permite evaluar la visibilidad en una pasada).
 
 ### Condiciones
 
@@ -104,7 +104,7 @@ Errores:
 1. Valor de `equals`/`in`/`includes` que no está en `options` del campo; el mensaje sugiere la opción más parecida (comparación sin mayúsculas ni tildes, luego distancia de edición).
 2. Operador incompatible con el tipo de campo (tabla de la sección 1).
 3. Referencias sin resolver: `{{id}}` en cualquier texto (incluidos párrafos objeto y textos de derivados), `field` de condiciones, `ref`.
-4. `{{id}}` que apunta a `checkbox`, `multiselect` o condición; `{{derivado}}` dentro de un derivado; `ref` dentro de una condición con nombre; `when` de un campo que se referencia a sí mismo.
+4. `{{id}}` que apunta a `checkbox`, `multiselect` o condición; `{{derivado}}` dentro de un derivado; `ref` dentro de una condición con nombre; `when` de un campo que usa un campo declarado después (o el propio).
 5. Identificadores repetidos entre campos, derivados y condiciones.
 6. Profundidad > 3; `all`/`any` con menos de 2 elementos; objeto de condición con cero o varias claves operadoras; claves desconocidas.
 7. Construcciones de versión 2 bajo `schema_version: 1`.
@@ -113,7 +113,7 @@ Errores:
 Avisos:
 
 - Campo no usado en ningún texto ni condición.
-- Opción de `select`/`multiselect` que ninguna condición menciona (solo si el campo interviene en alguna condición).
+- Opción de `select`/`multiselect` que ninguna condición menciona (solo si el campo interviene en alguna condición y no se inserta como texto; es normal si esa opción es la rama por defecto).
 - Marcas del modelo que parecen haberse colado en el texto: `[●]`, `XXX`, `[Incluir…]`, `[Adaptar…]`, notas al pie `[n]`, `[^n]`, `[RECUADRO]`.
 - Comprobación de alcanzabilidad omitida por exceso de combinaciones.
 
@@ -149,14 +149,14 @@ Una plantilla v1 produce exactamente la misma salida que hoy (prueba de referenc
 
 ### Pruebas (`node:test`, sin dependencias nuevas)
 
-Directorio `skills/generar-documento-auditoria/test/`:
+Directorio `tests/generar-documento/` (fuera de `skills/` para que `scripts/package.py` no empaquete las pruebas):
 
 - `evaluator.test.mjs`: tablas de verdad por operador; campo oculto evaluado como vacío; orden de casos y `default` de derivados; eliminación de secciones vacías.
 - `validator.test.mjs`: un caso de rechazo por cada error de la sección 2 (incluida la sugerencia «Favorable»), y cada aviso.
 - `render.test.mjs`: `examples/carta-encargo.json` produce la misma salida de `buildModel()` que la referencia guardada; una plantilla de prueba v2 con todas las piezas valida, renderiza y genera el resultado esperado para dos o tres combinaciones de respuestas.
 - Plantillas de prueba con estructura inspirada en 1728 y 1163 y **texto sintético**; no se incorpora texto del ICJCE al repositorio.
 
-`scripts/validate.py` ejecuta `node --test skills/generar-documento-auditoria/test/` y comprueba la existencia de `assets/evaluator.js`.
+`scripts/validate.py` ejecuta `node --test tests/generar-documento/*.test.mjs` y comprueba la existencia de `assets/evaluator.js`.
 
 ### Documentación de la habilidad
 

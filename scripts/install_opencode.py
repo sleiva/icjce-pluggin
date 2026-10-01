@@ -169,7 +169,9 @@ def nested_object_after_member(source: str, parent_open: int, name: str) -> int:
     raise ValueError(f"No se encontró {name} dentro del objeto")
 
 
-def add_mcp(source: str, client_id: str | None = None) -> str:
+def add_mcp(source: str, client_id: str | None = None, redirect_uri: str | None = None) -> str:
+    if redirect_uri and not client_id:
+        raise ValueError("--redirect-uri requiere --client-id")
     config = parse_jsonc(source)
     if "icjce" in config.get("mcp", {}):
         if config["mcp"]["icjce"].get("url") != MCP["url"]:
@@ -178,18 +180,33 @@ def add_mcp(source: str, client_id: str | None = None) -> str:
             return source
         oauth = config["mcp"]["icjce"].get("oauth")
         if oauth is not None:
-            if isinstance(oauth, dict) and oauth.get("clientId") == client_id:
+            if not isinstance(oauth, dict) or oauth.get("clientId") != client_id:
+                raise ValueError("icjce ya contiene opciones OAuth distintas; revísalas manualmente")
+            if not redirect_uri or oauth.get("redirectUri") == redirect_uri:
                 return source
-            raise ValueError("icjce ya contiene opciones OAuth distintas; revísalas manualmente")
+            if oauth.get("redirectUri"):
+                raise ValueError("icjce ya contiene otra URL de retorno; revísala manualmente")
+            mcp_open = object_after_member(source, "mcp")
+            icjce_open = nested_object_after_member(source, mcp_open, "icjce")
+            oauth_open = nested_object_after_member(source, icjce_open, "oauth")
+            result = source[:oauth_open + 1] + f'"redirectUri": {json.dumps(redirect_uri)}, ' + source[oauth_open + 1:]
+            if parse_jsonc(result)["mcp"]["icjce"]["oauth"]["redirectUri"] != redirect_uri:
+                raise ValueError("No se pudo validar la URL de retorno resultante")
+            return result
         mcp_open = object_after_member(source, "mcp")
         icjce_open = nested_object_after_member(source, mcp_open, "icjce")
-        result = source[:icjce_open + 1] + f'\n      "oauth": {{"clientId": {json.dumps(client_id)}}},' + source[icjce_open + 1:]
+        oauth_data = {"clientId": client_id}
+        if redirect_uri:
+            oauth_data["redirectUri"] = redirect_uri
+        result = source[:icjce_open + 1] + f'\n      "oauth": {json.dumps(oauth_data)},' + source[icjce_open + 1:]
         if parse_jsonc(result)["mcp"]["icjce"]["oauth"]["clientId"] != client_id:
             raise ValueError("No se pudo validar el Client ID resultante")
         return result
     entry_data = dict(MCP)
     if client_id:
         entry_data["oauth"] = {"clientId": client_id}
+        if redirect_uri:
+            entry_data["oauth"]["redirectUri"] = redirect_uri
     entry = json.dumps(entry_data, ensure_ascii=False, indent=2).replace("\n", "\n    ")
     if "mcp" in config:
         if not isinstance(config["mcp"], dict):
@@ -205,13 +222,13 @@ def add_mcp(source: str, client_id: str | None = None) -> str:
     return result
 
 
-def install(config_dir: Path, client_id: str | None = None) -> None:
+def install(config_dir: Path, client_id: str | None = None, redirect_uri: str | None = None) -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
     config_path = next((config_dir / name for name in ("opencode.jsonc", "opencode.json") if (config_dir / name).exists()), config_dir / "opencode.json")
     if (config_dir / "opencode.jsonc").exists() and (config_dir / "opencode.json").exists():
         raise ValueError("Hay opencode.json y opencode.jsonc; resuelve cuál utiliza OpenCode antes de instalar")
     old = config_path.read_text(encoding="utf-8") if config_path.exists() else '{\n  "$schema": "https://opencode.ai/config.json"\n}\n'
-    updated = add_mcp(old, client_id)
+    updated = add_mcp(old, client_id, redirect_uri)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     with tempfile.TemporaryDirectory(prefix="icjce-opencode-") as temporary:
         staging = Path(temporary)
@@ -248,9 +265,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config-dir", type=Path, default=Path.home() / ".config" / "opencode")
     parser.add_argument("--client-id", help="Client ID público de una aplicación Auth0 con el callback de OpenCode autorizado")
+    parser.add_argument("--redirect-uri", help="URL de retorno ya autorizada para ese Client ID en Auth0")
     args = parser.parse_args()
     try:
-        install(args.config_dir.expanduser(), args.client_id)
+        install(args.config_dir.expanduser(), args.client_id, args.redirect_uri)
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"Instalación detenida: {error}", file=sys.stderr)
         return 1

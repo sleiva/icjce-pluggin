@@ -92,6 +92,11 @@ El Client ID no es un secreto; el instalador lo añade solo a tu configuración 
 aplicación pública. El repositorio no publica un Client ID porque cada instalación puede
 usar un tenant distinto.
 
+También puedes reutilizar un cliente público cuyo callback local ya esté autorizado:
+añade `--redirect-uri URL_EXISTENTE` al instalador. La URL debe coincidir exactamente con
+una de **Allowed Callback URLs** de esa aplicación Auth0. Esto evita crear otra aplicación
+y no cambia los callbacks de los demás clientes.
+
 También puedes abrir OpenCode **en la raíz de este repositorio** sin ejecutar el instalador:
 `opencode.json` configura el MCP y descubre `./skills`. Así las instrucciones funcionan
 solo en este proyecto. En OpenCode 1.x, la herramienta `skill` carga cada habilidad por

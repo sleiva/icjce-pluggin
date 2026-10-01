@@ -297,7 +297,9 @@ function domain(field, spec) {
   if (field.type === 'text') return ['', ...citedValues(spec, field.id), '\u0000otro'];
   if (field.type === 'multiselect') {
     const cited = citedValues(spec, field.id);
-    return Array.from({ length: 2 ** cited.length }, (_, mask) => cited.filter((_, bit) => mask & (1 << bit)));
+    const extra = field.options.find(option => !cited.includes(option));
+    const base = extra ? [...cited, extra] : cited;
+    return Array.from({ length: 2 ** base.length }, (_, mask) => base.filter((_, bit) => mask & (1 << bit)));
   }
   return ['', 'x'];
 }

@@ -81,6 +81,13 @@ test('secciones y párrafos inalcanzables', () => {
   assert.throws(() => validate(paragraph), /sections\[0\]\.paragraphs\[1\]: inalcanzable/);
 });
 
+test('multiselect usado solo con filled es alcanzable', () => {
+  const base = spec();
+  base.fields.push({ id: 'ms', label: 'Varios', type: 'multiselect', options: ['A', 'B'] });
+  base.sections.push({ heading: 'Dos', when: { field: 'ms', filled: true }, paragraphs: ['Texto.'] });
+  assert.doesNotThrow(() => validate(base));
+});
+
 test('avisos', () => {
   const unused = spec({ sections: [{ heading: 'Uno', paragraphs: ['{{opinion}} [1]'] }] });
   const warnings = lint(validate(unused));

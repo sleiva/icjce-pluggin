@@ -1,8 +1,9 @@
 # ICJCE Auditoría — ChatGPT y Claude
 
-Dos skills compartidas para responder a consultas de auditoría en España leyendo las fuentes
-y citándolas: `experto-auditoria-icjce` organiza las materias; `consultar-icjce-mcp` guía las
-consultas al servidor. Las cinco referencias temáticas existentes se conservan.
+Una habilidad compartida, `consultar-icjce-mcp`, guía las respuestas a consultas de
+auditoría en España. Combina el análisis del modelo, los textos del MCP del ICJCE y la
+búsqueda web de fuentes oficiales cuando está disponible. Conserva cinco referencias
+temáticas para orientar las consultas.
 
 Ambos clientes quedan configurados para autenticarse con OAuth mediante Auth0. El servidor
 MCP también acepta una API key para otras integraciones, pero este plugin no la solicita ni
@@ -61,20 +62,20 @@ Referencia: [autenticación de plugins en ChatGPT](https://developers.openai.com
 2. Comprueba que el MCP conecta y descubre operaciones como `indice_norma` y `leer_articulo`.
 3. Solicita una consulta de auditoría con citas. Revisa que realmente llama al MCP y enlaza
    las URLs devueltas, sin inventarlas.
-4. Sin conexión, comprueba que avisa de la limitación en lugar de fingir una consulta.
+4. Sin conexión MCP, comprueba que avisa de la limitación y que puede continuar con
+   fuentes oficiales web verificadas, sin fingir una consulta al MCP.
 
-La validación estática no prueba el inicio de sesión ni las respuestas normativas. El
-01-10-2026 se comprobó que el endpoint público devuelve metadatos OAuth, exige autenticación
-con `401` y publica 9 herramientas. El inicio de sesión interactivo en ChatGPT y la app de
-Claude queda pendiente de probar con un usuario de Auth0.
+La validación estática no prueba las respuestas normativas. El 01-10-2026 se comprobó que
+el endpoint público devuelve metadatos OAuth, exige autenticación con `401` y publica 9
+herramientas. El usuario completó el login de Auth0, pero el descubrimiento de herramientas
+en ChatGPT y Claude todavía requiere verificación funcional.
 
 ## Mantenimiento y ZIP
 
 `skills/` es la única copia consumida por ambos clientes. El backend de NappAI es el origen
-histórico del contenido; `scripts/sincroniza.sh /ruta/al/backend` importa sus skills y
-**sobrescribe las adaptaciones locales**. Revisa el diff y conserva las reglas de portabilidad
-antes de publicar. El validador detecta la reintroducción de prefijos de cliente y del marcador
-antiguo de sub-skill. No ejecutes la sincronización como parte del empaquetado.
+histórico de las referencias temáticas; `scripts/sincroniza.sh /ruta/al/backend` importa
+solo esas referencias y conserva la habilidad única adaptada al plugin. Revisa el diff
+antes de publicar. No ejecutes la sincronización como parte del empaquetado.
 
 Mantén iguales los metadatos y la versión en `plugin.json`, `.codex-plugin/plugin.json` y
 `.claude-plugin/plugin.json`.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Copia las skills desde el backend, que es su FUENTE. No se editan aquí a mano: una copia
-# mantenida a mano divergiría sin avisar (el plugin enseñaría un método que el MCP ya cambió).
+# Actualiza las referencias temáticas desde el backend sin sobrescribir la habilidad
+# única del plugin, que combina MCP, análisis del modelo y búsqueda web.
 #
 #   scripts/sincroniza.sh [/ruta/a/nappai-ai-backend]
 #
@@ -8,17 +8,15 @@
 set -euo pipefail
 
 BACKEND="${1:-/Users/projects/nappai/nappai-ai-backend}"
-SRC="$BACKEND/nappai/base/kgraph/auditoriaV2/mcp"
-DEST="$(cd "$(dirname "$0")/.." && pwd)/skills"
+SRC="$BACKEND/nappai/base/kgraph/auditoriaV2/mcp/experto-auditoria-icjce/references"
+DEST="$(cd "$(dirname "$0")/.." && pwd)/skills/consultar-icjce-mcp/references"
 
-for skill in experto-auditoria-icjce consultar-icjce-mcp; do
-  if [[ ! -f "$SRC/$skill/SKILL.md" ]]; then
-    echo "No encuentro $SRC/$skill/SKILL.md" >&2
+for reference in auditoria.md independencia.md calidad.md contabilidad.md otras_actuaciones.md; do
+  if [[ ! -f "$SRC/$reference" ]]; then
+    echo "No encuentro $SRC/$reference" >&2
     exit 1
   fi
-  rm -rf "${DEST:?}/$skill"
-  cp -R "$SRC/$skill" "$DEST/$skill"
-  find "$DEST/$skill" -name '__pycache__' -prune -exec rm -rf {} +
+  cp "$SRC/$reference" "$DEST/$reference"
 done
 
-git -C "$DEST/.." status --short
+git -C "$DEST/../../.." status --short

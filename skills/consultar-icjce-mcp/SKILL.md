@@ -1,63 +1,55 @@
 ---
 name: consultar-icjce-mcp
-description: Úsala cuando respondas a un auditor de cuentas en España con el MCP del ICJCE conectado — preguntas sobre la LAC, el RLAC, el RUE, el TRLSC, las NIA-ES, consultas del ICAC (BOICAC), circulares y guías de actuación del ICJCE, modelos de informe o de carta de encargo, independencia e incompatibilidades, novedades del BOE — y también cuando esas tools no aparezcan o fallen.
+description: Úsala en toda consulta sustantiva sobre auditoría de cuentas en España, incluidos casos prácticos, normativa, independencia, informes, calidad y contabilidad. Combina el análisis del modelo con el MCP del ICJCE y la búsqueda web de fuentes oficiales cuando esté disponible. No la actives para preguntas técnicas sobre la integración ni por menciones incidentales de auditoría.
 ---
 
-# Consultar el MCP del ICJCE
+# Auditoría de cuentas en España: análisis con el MCP del ICJCE
 
-## Principio
+## Forma de trabajar
 
-Fundamenta los datos normativos y doctrinales en fuentes leídas con las herramientas disponibles. Usa el MCP para consultar su corpus y complétalo con otras herramientas pertinentes cuando ayuden a analizar el caso o verificar fuentes oficiales. Tu conocimiento sirve para razonar y orientar la búsqueda, no para afirmar de memoria qué norma o circular está vigente.
+Activa esta habilidad para las preguntas sustantivas de auditoría, también cuando el usuario pida analizar un caso, calcular, revisar o redactar. **Resuelve la pregunta con criterio técnico propio**: razona sobre los hechos, los cálculos y las alternativas. El MCP aporta textos de su corpus; la búsqueda web permite contrastar vigencia, novedades y fuentes oficiales fuera de ese corpus. Ninguna de estas vías sustituye a las otras.
 
-## Descubrimiento independiente del cliente
+1. Identifica la cuestión y los datos que pueden cambiar la respuesta. En particular, atiende al inicio del ejercicio auditado, si la entidad es EIP, el carácter obligatorio o voluntario de la auditoría, y el tipo de cuentas o informe cuando sean relevantes. Si faltan datos, explica las variantes o pide solo el dato indispensable.
+2. Consulta el MCP cuando la respuesta dependa de normativa, doctrina, guías, circulares, modelos o datos que consten en su corpus. Abre el artículo o documento pertinente antes de atribuirle una conclusión. En preguntas prácticas sin una afirmación normativa relevante, úsalo solo si aporta evidencia útil.
+3. Cuando esté disponible, usa búsqueda web para verificar información que pueda haber cambiado, localizar la fuente oficial vigente o contrastar algo que el MCP no cubra. Prefiere BOE, ICAC, ICJCE y otras fuentes primarias según la materia. Si el usuario pide expresamente no buscar en la web, respeta esa preferencia.
+4. Integra el análisis: responde primero a la pregunta; separa lo que dicen las fuentes de tu inferencia profesional, aplica los textos al caso y explica discrepancias o límites. Cita las fuentes efectivamente leídas. No conviertas la respuesta en un resumen de la habilidad ni en una lista de resultados de herramientas.
 
-Los nombres cortos de la tabla son operaciones esperadas del MCP ICJCE, no nombres completos
-que debas construir. Descubre las herramientas que el cliente tenga conectadas; identifica
-el servidor ICJCE por su procedencia, descripciones y esquemas. Usa el nombre completo que
-exponga el cliente y los argumentos de su esquema real. No dependas de un prefijo, de que
-el usuario haya llamado `icjce` a la conexión, ni de una herramienta de búsqueda concreta.
-Si una operación cambia de nombre, solo usa su equivalente cuando la descripción y el esquema
-confirmen la misma función. No inventes operaciones ni argumentos no anunciados.
+**Si falla una fuente:** si el MCP no está disponible, dilo y continúa con fuentes oficiales web cuando sea posible; una respuesta verificada en esas fuentes sigue siendo útil. Si tampoco hay web, ofrece solo orientación general e identifica lo que queda sin verificar. Nunca afirmes haber consultado el MCP o la web si no lo hiciste.
 
-Los parámetros y ejemplos siguientes orientan la consulta; comprueba primero que el esquema
-real los admite. Si las tools no están cargadas, usa el mecanismo de descubrimiento del cliente
-si existe. No leas credenciales ni pidas pegarlas en el chat: la conexión se configura fuera de
-la conversación siguiendo el README del plugin.
+## Referencia temática
 
-## Si las tools no están o fallan
+Lee solo la referencia que ayude a orientar la consulta; es un mapa de búsqueda, no una fuente que deba citarse como vigente.
 
-Si no ves `indice_norma`, `buscar_circulares`, etc., o devuelven errores de conexión: **dilo al usuario y no contestes de memoria** como si hubieras consultado. Como mucho, una orientación general marcada expresamente como «sin verificar en las fuentes del ICJCE».
-
-## Primera tool según la pregunta
-
-| La pregunta va de… | Primera tool | Después |
-|---|---|---|
-| Lo que dice una ley o norma (LAC, RLAC, RUE, TRLSC, LIS…) o una NIA-ES | `indice_norma` | `leer_articulo` con el `block_id` |
-| Circulares, guías de actuación, notas técnicas; «la última circular de…», «hay una actualización de…» | `buscar_circulares` | `leer_documento` |
-| Un modelo, plantilla o redacción tipo (informe, carta de encargo o de manifestaciones, párrafo de énfasis…) | `buscar_modelos_informe` | `leer_documento(doc_id, fuente, desde)` |
-| Independencia, incompatibilidades, servicios prohibidos, honorarios, rotación | `mapa_independencia` (aunque citen una consulta del ICAC) | `leer_articulo` / `leer_documento` |
-| Consultas del ICAC, preguntas de la semana, calidad, sostenibilidad, otras actuaciones | `buscar_documentos` | `leer_documento` |
-| «¿Qué ha salido?», normas nuevas o en tramitación | `novedades_boe` | `indice_norma` si ya está vigente |
-| Un dato literal (plazo, importe, frase) que lo anterior no encontró | `buscar_en_texto` | `leer_documento` |
-
-`buscar_en_texto` es el **último recurso**: sus fragmentos no dicen qué versión está vigente.
-
-## Reglas
-
-- **Artículos**: no cites un número de artículo que no aparezca en `indice_norma`. El `block_id` no es el número (el art. 60 del RLAC es `a6-2`).
-- **Lee antes de afirmar**: un título o un resumen no bastan; abre el artículo o el documento.
-- **NIA-ES por ejercicio**: la versión aplicable depende de la fecha de inicio del ejercicio auditado. Si la pregunta la da o la sugiere («ejercicio 2023»), pásala en `ejercicio`; si no, se usa la vigente y conviene decirlo.
-- **Una llamada con alternativas mejor que varias**: `filtro='auditor|junta'`, `norma='LAC,RLAC'`, `block_id='a22,a23'`. Para códigos y variantes usa `patrones` (`['ES0[0-9]/2026']`, `['GA ?55R?']`).
-- **Búsqueda vacía**: prueba sinónimos o `patrones` y otra tool de la tabla antes de concluir que no hay nada; si sigue vacía, dilo.
-- **Solo lo vigente**: el MCP no sirve circulares superadas. Si una guía tiene versión revisada, responde con la más reciente; las anteriores, solo como contexto.
-- **Citas**: cada fuente como `[nombre](URL)` con la URL **exacta** del resultado (nunca construida ni combinada). Nombra la circular por su código (ES11/2026), el artículo con su norma (art. 22 LAC) y la fecha. No muestres `doc_id` ni `chunk_id`.
-
-## Errores comunes
-
-| Error | Corrección |
+| Materia | Referencia |
 |---|---|
-| Contestar de memoria porque «la sabes» | La norma o la circular puede haber cambiado: consulta y cita |
-| Empezar por `buscar_en_texto` | Empieza por la tool de la tabla |
-| Citar «art. 40 LAC» sin mirarlo en el índice | `indice_norma` con `filtro` y `leer_articulo` |
-| Dar por inexistente una circular de 2026 que no conoces | Si la devuelve el MCP, es real |
-| Pegar un ancla `#aN` a mano en la URL del BOE | Copia el enlace que da la tool |
+| NIA-ES, LAC, RLAC, RUE, informes, empresa en funcionamiento, contrato y prórroga, EIP | `references/auditoria.md` |
+| Independencia, incompatibilidades, honorarios, rotación y servicios prohibidos | `references/independencia.md` |
+| Gestión y revisión de calidad, NIGC y NIA-ES 220 | `references/calidad.md` |
+| Registro y valoración contable, cuentas anuales y consultas contables | `references/contabilidad.md` |
+| Procedimientos acordados, revisión limitada e informes especiales | `references/otras_actuaciones.md` |
+
+Si la pregunta cruza materias, usa las referencias pertinentes. Para sostenibilidad o doctrina jurídica del ICJCE, consulta `buscar_documentos` con el grupo adecuado si el esquema real lo admite.
+
+## Herramientas MCP
+
+Descubre las herramientas que el cliente tenga conectadas e identifica el servidor ICJCE por su procedencia, descripción y esquema. Los nombres siguientes son operaciones esperadas, **no nombres completos que debas construir**. Invoca solo las herramientas y argumentos que el cliente anuncie. Si no aparecen, usa el mecanismo de descubrimiento disponible; no pidas credenciales en el chat.
+
+| La pregunta va de… | Empieza por | Después |
+|---|---|---|
+| Ley, reglamento o NIA-ES | `indice_norma` | `leer_articulo` con el `block_id` devuelto |
+| Circulares y guías de actuación | `buscar_circulares` | `leer_documento` |
+| Modelos de informe o cartas | `buscar_modelos_informe` | `leer_documento` |
+| Independencia e incompatibilidades | `mapa_independencia` | `leer_articulo` o `leer_documento` |
+| Consultas ICAC, calidad, sostenibilidad y otras actuaciones | `buscar_documentos` | `leer_documento` |
+| Novedades normativas | `novedades_boe` | `indice_norma` si ya están vigentes |
+| Un dato literal que no apareció en la búsqueda anterior | `buscar_en_texto` | `leer_documento` |
+
+`buscar_en_texto` es el último recurso para datos literales: sus fragmentos no establecen por sí solos la vigencia. Si una búsqueda está vacía, prueba sinónimos, variantes u otra operación pertinente antes de concluir que el corpus no contiene el dato.
+
+## Comprobaciones al responder
+
+- No afirmes de memoria qué norma, versión de NIA-ES, circular, plazo o importe está vigente. Contrástalo en el MCP o una fuente primaria web.
+- Para NIA-ES, usa la fecha de inicio del ejercicio auditado si se conoce; si no, indica la versión consultada. El `block_id` es un identificador interno, no el número de artículo.
+- Una referencia, un título o un fragmento no bastan para atribuir una conclusión: lee el artículo o documento correspondiente. Contrasta con la web si hay indicios de actualización o conflicto.
+- Enlaza cada fuente con la URL exacta obtenida de la herramienta o página consultada; no construyas enlaces ni anclas. No muestres `doc_id` ni `chunk_id`.
+- No hables en nombre del ICJCE. Reserva «obligatorio» y expresiones equivalentes para exigencias que consten en una fuente verificada; distingue los juicios y recomendaciones profesionales.

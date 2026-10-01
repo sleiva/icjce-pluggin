@@ -37,7 +37,8 @@ def validate():
     assert market['plugins'][0]['name'] == portable['name']
     assert market['plugins'][0]['source'] == './'
     skills = sorted((ROOT / 'skills').glob('*/SKILL.md'))
-    assert len(skills) == 2
+    assert len(skills) == 1
+    assert skills[0].parent.name == 'consultar-icjce-mcp'
     for path in skills:
         text = path.read_text()
         front = yaml.safe_load(text.split('---', 2)[1])

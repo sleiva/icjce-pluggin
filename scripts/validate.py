@@ -33,6 +33,15 @@ def validate():
     assert 'headers' not in server, 'Portable MCP must use OAuth without custom headers'
     assert 'headers' not in native, 'Claude MCP must use OAuth without custom headers'
     assert 'userConfig' not in claude, 'Claude must not request an API key'
+    opencode = read('opencode.json')
+    assert opencode['mcp']['icjce'] == {
+        'type': 'remote', 'url': server['url'], 'enabled': True,
+    }, 'OpenCode MCP must match the portable endpoint'
+    assert opencode['skills'] == {'paths': ['./skills']}
+    hermes = yaml.safe_load((ROOT / 'integrations/hermes/config.yaml.example').read_text())
+    assert hermes['mcp_servers']['icjce'] == {
+        'url': server['url'], 'auth': 'oauth',
+    }, 'Hermes MCP must match the portable endpoint'
     market = read('.claude-plugin/marketplace.json')
     assert market['plugins'][0]['name'] == portable['name']
     assert market['plugins'][0]['source'] == './'
@@ -53,7 +62,7 @@ def validate():
                      'assets/assistant-runtime.js', 'assets/icjce-logo.png',
                      'examples/carta-encargo.json', 'references/esquema-json.md'):
         assert (renderer / relative).is_file(), relative
-    print('OK: official Agent Plugins 1.0 schemas; metadata, marketplace, both skills and renderer assets')
+    print('OK: plugin schemas; OpenCode and Hermes MCP; metadata, marketplace, both skills and renderer assets')
 
 if __name__ == '__main__':
     validate()

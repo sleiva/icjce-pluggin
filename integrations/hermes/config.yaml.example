@@ -1,0 +1,6 @@
+# Fragmento para ~/.hermes/config.yaml (perfil local de Hermes Agent Desktop).
+# No contiene credenciales. Hermes abre Auth0 al autorizar el MCP.
+mcp_servers:
+  icjce:
+    url: "https://icjce-api.nappai.tech/api/v2/mcp/6efc4933-077e-4dc0-b8d0-2a5cb46bf54a/mcp"
+    auth: oauth

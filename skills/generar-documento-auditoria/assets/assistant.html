@@ -44,6 +44,18 @@
     .group-row label:first-child { margin-top:0; }
     .field .add-row,.field .remove-row { border:1px solid var(--sea); border-radius:9px; padding:7px 12px; font-weight:700; margin-top:8px; }
     .field .add-row:disabled,.field .remove-row:disabled { opacity:.45; cursor:not-allowed; }
+    .mode-bar { display:flex; gap:8px; margin:14px 0 4px; }
+    .mode-bar .mode { border:1px solid var(--line); border-radius:9px; padding:8px 12px; background:#fff; color:var(--muted); font-weight:700; }
+    .mode-bar .mode.current { background:var(--sea); border-color:var(--sea); color:#fff; }
+    .batch-panel textarea { width:100%; min-height:110px; font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .batch-panel input[type="file"] { display:block; margin:10px 0 0; }
+    .batch-errors { color:var(--warn); font-size:13px; padding-left:18px; }
+    .batch-list { max-height:240px; overflow:auto; padding-left:22px; font-size:13px; }
+    .recipient { border:0; background:none; padding:2px 0; text-align:left; color:var(--ink); }
+    .recipient.current { font-weight:800; color:var(--sea-dark); }
+    .recipient-nav { display:flex; gap:8px; align-items:center; }
+    .recipient-nav button { border:1px solid var(--sea); border-radius:9px; padding:6px 10px; color:var(--sea-dark); background:#fff; font-weight:700; }
+    .recipient-nav button:disabled { opacity:.45; cursor:not-allowed; }
     .field .help { margin:5px 0 0; color:var(--muted); font-size:12px; }
     .summary { border-radius:12px; padding:15px; background:#fbedf0; color:#672033; margin:18px 0; }
     .summary.warn { background:var(--warn-bg); color:var(--warn); }
@@ -82,6 +94,7 @@
       .paper h3 { break-after:avoid; }
       .paper p { orphans:3; widows:3; }
       .paper tr { break-inside:avoid; }
+      .doc-page.break { break-before:page; }
       .paper thead { display:table-header-group; }
     }
   </style>
@@ -100,6 +113,7 @@
     /*__SPEC__*/
     /*__EVALUATOR__*/
     /*__DOCX__*/
+    /*__TABULAR__*/
     /*__RUNTIME__*/
   </script>
 </body>

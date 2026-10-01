@@ -18,11 +18,12 @@ export async function render(spec, outputPath) {
   const template = await readFile(join(ROOT, 'assets', 'assistant.html'), 'utf8');
   const evaluator = await readFile(join(ROOT, 'assets', 'evaluator.js'), 'utf8');
   const docx = await readFile(join(ROOT, 'assets', 'docx.js'), 'utf8');
+  const tabular = await readFile(join(ROOT, 'assets', 'tabular.js'), 'utf8');
   const runtime = await readFile(join(ROOT, 'assets', 'assistant-runtime.js'), 'utf8');
   const logo = await readFile(join(ROOT, 'assets', 'icjce-logo.png'));
-  const html = template.replace('/*__EVALUATOR__*/', () => evaluator).replace('/*__DOCX__*/', () => docx).replace('/*__RUNTIME__*/', () => runtime).replace('/*__SPEC__*/', () => `const spec = ${safeJson(spec)};`)
+  const html = template.replace('/*__EVALUATOR__*/', () => evaluator).replace('/*__DOCX__*/', () => docx).replace('/*__TABULAR__*/', () => tabular).replace('/*__RUNTIME__*/', () => runtime).replace('/*__SPEC__*/', () => `const spec = ${safeJson(spec)};`)
     .replace('/*__LOGO__*/', () => `data:image/png;base64,${logo.toString('base64')}`);
-  if (html === template || ['/*__EVALUATOR__*/', '/*__DOCX__*/', '/*__RUNTIME__*/', '/*__SPEC__*/', '/*__LOGO__*/'].some(token => html.includes(token))) fail('No se pudieron insertar los recursos del asistente');
+  if (html === template || ['/*__EVALUATOR__*/', '/*__DOCX__*/', '/*__TABULAR__*/', '/*__RUNTIME__*/', '/*__SPEC__*/', '/*__LOGO__*/'].some(token => html.includes(token))) fail('No se pudieron insertar los recursos del asistente');
   const target = resolve(outputPath);
   const temporary = `${target}.${randomUUID()}.tmp`;
   try { await writeFile(temporary, html, { encoding: 'utf8', flag: 'wx' }); await rename(temporary, target); }

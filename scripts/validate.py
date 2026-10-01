@@ -32,12 +32,13 @@ def validate():
     assert server['url'] == native['url'] and server['url'].startswith('https://')
     assert 'headers' not in server, 'Portable MCP must use OAuth without custom headers'
     assert 'headers' not in native, 'Claude MCP must use OAuth without custom headers'
+    assert native['oauth']['clientId'] == 'https://icjce-api.nappai.tech/mcp/metadata/oauth.json'
     assert 'userConfig' not in claude, 'Claude must not request an API key'
     opencode = read('opencode.json')
     assert opencode['mcp']['icjce'] == {
         'type': 'remote', 'url': server['url'], 'enabled': True,
         'oauth': {
-            'clientId': 'tpc_usH5S5S2xpb88ociR6yE63',
+            'clientId': 'https://icjce-api.nappai.tech/mcp/metadata/oauth.json',
             'redirectUri': 'http://127.0.0.1:51217/callback',
         },
     }, 'OpenCode MCP must match the portable endpoint'

@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MCP = json.loads((ROOT / "opencode.json").read_text(encoding="utf-8"))["mcp"]["icjce"]
 SKILLS = ("consultar-icjce-mcp", "generar-documento-auditoria")
+LEGACY_CLIENT_ID = "tpc_usH5S5S2xpb88ociR6yE63"
 
 
 def without_comments(source: str) -> str:
@@ -181,7 +182,19 @@ def add_mcp(source: str, client_id: str | None = None, redirect_uri: str | None 
             raise ValueError("Ya existe un MCP 'icjce' con otra URL; revísalo manualmente")
         oauth = config["mcp"]["icjce"].get("oauth")
         if oauth is not None:
-            if not isinstance(oauth, dict) or oauth.get("clientId") != client_id:
+            if not isinstance(oauth, dict):
+                raise ValueError("icjce ya contiene otro Client ID; revísalo antes de continuar")
+            if oauth.get("clientId") == LEGACY_CLIENT_ID and client_id == MCP["oauth"]["clientId"]:
+                if oauth.get("redirectUri") != MCP["oauth"]["redirectUri"]:
+                    raise ValueError("icjce usa un callback distinto; revísalo antes de migrar a CIMD")
+                old_value = json.dumps(LEGACY_CLIENT_ID)
+                if source.count(old_value) != 1:
+                    raise ValueError("No se pudo localizar de forma inequívoca el Client ID anterior")
+                result = source.replace(old_value, json.dumps(client_id), 1)
+                if parse_jsonc(result)["mcp"]["icjce"]["oauth"]["clientId"] != client_id:
+                    raise ValueError("No se pudo validar el Client ID CIMD resultante")
+                return result
+            if oauth.get("clientId") != client_id:
                 raise ValueError("icjce ya contiene otro Client ID; revísalo antes de continuar")
             if not redirect_uri or oauth.get("redirectUri") == redirect_uri:
                 return source
@@ -265,8 +278,8 @@ def install(config_dir: Path, client_id: str | None = None, redirect_uri: str | 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config-dir", type=Path, default=Path.home() / ".config" / "opencode")
-    parser.add_argument("--client-id", help="Client ID público de una aplicación Auth0 con el callback de OpenCode autorizado")
-    parser.add_argument("--redirect-uri", help="URL de retorno ya autorizada para ese Client ID en Auth0")
+    parser.add_argument("--client-id", help="Client ID CIMD (URL HTTPS del documento OAuth registrado en Auth0)")
+    parser.add_argument("--redirect-uri", help="URL de retorno incluida en el documento CIMD")
     args = parser.parse_args()
     try:
         install(args.config_dir.expanduser(), args.client_id, args.redirect_uri)

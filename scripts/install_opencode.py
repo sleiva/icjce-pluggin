@@ -172,7 +172,6 @@ def nested_object_after_member(source: str, parent_open: int, name: str) -> int:
 def add_mcp(source: str, client_id: str | None = None, redirect_uri: str | None = None) -> str:
     if redirect_uri and not client_id:
         raise ValueError("--redirect-uri requiere --client-id")
-    explicit_oauth = client_id is not None
     if client_id is None:
         client_id = MCP["oauth"]["clientId"]
         redirect_uri = MCP["oauth"]["redirectUri"]
@@ -182,10 +181,8 @@ def add_mcp(source: str, client_id: str | None = None, redirect_uri: str | None 
             raise ValueError("Ya existe un MCP 'icjce' con otra URL; revísalo manualmente")
         oauth = config["mcp"]["icjce"].get("oauth")
         if oauth is not None:
-            if not explicit_oauth:
-                return source
             if not isinstance(oauth, dict) or oauth.get("clientId") != client_id:
-                raise ValueError("icjce ya contiene opciones OAuth distintas; revísalas manualmente")
+                raise ValueError("icjce ya contiene otro Client ID; revísalo antes de continuar")
             if not redirect_uri or oauth.get("redirectUri") == redirect_uri:
                 return source
             if oauth.get("redirectUri"):

@@ -82,31 +82,18 @@ otros proveedores, servidores y comentarios; crea una copia de seguridad antes d
 la configuración. Reinicia OpenCode tras instalar. El acceso OAuth se completa en el
 navegador; no se escribe ninguna API key en el repositorio.
 
-`opencode.json` y el instalador usan por defecto el cliente público
+Para esta prueba, `opencode.json` y el instalador usan el único cliente público
 `tpc_usH5S5S2xpb88ociR6yE63` y el callback ya autorizado
-`http://127.0.0.1:51217/callback`. Para otra aplicación Auth0, indica su Client ID y
-callback al instalador con `--client-id` y `--redirect-uri`.
+`http://127.0.0.1:51217/callback`.
 
 Si `opencode mcp auth icjce` termina en «Authentication failed», comprueba que el
 Client ID del archivo coincida con la aplicación Auth0 y que su callback
-`http://127.0.0.1:51217/callback` figure en **Allowed Callback URLs**. Para usar
-otra aplicación pública de Auth0 con autenticación de cliente `None`, ejecuta:
-
-```sh
-python3 scripts/install_opencode.py --client-id TU_CLIENT_ID_PUBLICO --redirect-uri URL_AUTORIZADA
-opencode mcp auth icjce
-```
+`http://127.0.0.1:51217/callback` figure en **Allowed Callback URLs**.
 
 El Client ID no es un secreto; el instalador lo añade a tu configuración local como
 `mcp.icjce.oauth.clientId` y conserva los demás ajustes. No añadas un Client Secret a una
-aplicación pública. Si ya existe `mcp.icjce` con otra configuración OAuth, el instalador
-la conserva salvo que indiques explícitamente un Client ID; en ese caso comprueba que
-coincida antes de cambiarla.
-
-También puedes reutilizar un cliente público cuyo callback local ya esté autorizado:
-añade `--redirect-uri URL_EXISTENTE` al instalador. La URL debe coincidir exactamente con
-una de **Allowed Callback URLs** de esa aplicación Auth0. Esto evita crear otra aplicación
-y no cambia los callbacks de los demás clientes.
+aplicación pública. Si ya existe `mcp.icjce` con otro Client ID o callback, el instalador
+se detiene para que revises la configuración antes de probar.
 
 También puedes abrir OpenCode **en la raíz de este repositorio** sin ejecutar el instalador:
 `opencode.json` configura el MCP y descubre `./skills`. Así las instrucciones funcionan

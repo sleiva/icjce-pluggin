@@ -61,3 +61,16 @@ test('el HTML incrusta evaluador, runtime y plantilla', async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test('los patrones especiales de reemplazo en el texto no corrompen el HTML', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'doc-render-'));
+  try {
+    const title = "Honorarios en $' y $&";
+    const out = await render({ ...fixture, title }, join(dir, 'a.html'));
+    const html = await readFile(out, 'utf8');
+    assert.equal(html.split('</script>').length - 1, html.split('<script').length - 1);
+    assert.equal(html.match(/<\/script>/g).length, (html.match(/<script/g) || []).length);
+    assert.ok(html.includes(`"title":${JSON.stringify(title).replace(/&/g, '\\u0026')}`));
+    assert.ok(!html.includes('/*__'));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

@@ -105,3 +105,21 @@ test('avisos', () => {
   ] });
   assert.ok(lint(validate(big)).some(w => /sections\[1\]: demasiadas combinaciones/.test(w)));
 });
+
+test('rechaza opciones con espacios al principio o al final', () => {
+  const bad = spec({ fields: [{ id: 'opinion', label: 'Opinión', type: 'select', options: ['Favorable', 'Otro '] }] });
+  assert.throws(() => validate(bad), /fields\[0\]\.options: las opciones no pueden empezar ni terminar con espacios \("Otro "\)/);
+});
+
+test('v2 rechaza claves desconocidas', () => {
+  const bad = spec({ sections: [{ heading: 'Uno', paragraphs: ['x'] }, { heading: 'Dos', whn: { checked: true }, paragraphs: ['y'] }] });
+  assert.throws(() => validate(bad), /sections\[1\]: clave desconocida whn/);
+  assert.throws(() => validate({ ...fixture, extra: 1 }), /clave desconocida extra/);
+});
+
+test('v1 acepta claves desconocidas pero lint avisa', () => {
+  const old = structuredClone(example);
+  old.fields[0].nota = 'x';
+  assert.doesNotThrow(() => validate(old));
+  assert.ok(lint(old).includes('fields[0]: clave desconocida nota'));
+});

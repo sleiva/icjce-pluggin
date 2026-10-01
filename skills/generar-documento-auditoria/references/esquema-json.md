@@ -52,7 +52,7 @@ Una condición es un objeto con un único operador. Se admite en campos, seccion
 | `includes` | `multiselect` |
 | `filled` | todos salvo `checkbox` |
 
-- Los valores de `equals`, `in` e `includes` deben coincidir **literalmente** con una opción del campo.
+- Los valores de `equals`, `in` e `includes` deben coincidir **literalmente** con una opción del campo (en campos con opciones).
 - `all` y `any` necesitan al menos dos condiciones. El anidamiento máximo es de tres niveles, contando lo que aporte un `ref`.
 - En la versión 1 solo se admite `{ "field": …, "equals": … }` en secciones.
 
@@ -94,6 +94,8 @@ En títulos, encabezados y párrafos se usan como un campo: `{{socios}}`, `{{por
 
 ## Validación
 
-`node bin/generar-documento.mjs validate plantilla.json` detiene la generación ante cualquier error, con la ruta exacta (por ejemplo `sections[4].paragraphs[2].when.equals`), incluido un valor que no es una opción (sugiere la más parecida) o una sección que ninguna combinación de respuestas puede mostrar. Los avisos (`Aviso: …`) no bloquean pero deben revisarse: campos sin uso, opciones que ninguna condición menciona (normal si esa opción es la rama por defecto) y marcas del modelo coladas en el texto (`[●]`, `XXX`, `[Incluir…]`, `[1]`).
+`node bin/generar-documento.mjs validate plantilla.json` detiene la generación ante cualquier error, con la ruta exacta (por ejemplo `sections[4].paragraphs[2].when.equals`), incluido un valor que no es una opción (sugiere la más parecida) o una sección que ninguna combinación de respuestas puede mostrar. Los avisos (`Aviso: …`) no bloquean pero deben revisarse: campos sin uso, opciones que ninguna condición menciona (normal si esa opción es la rama por defecto) y marcas del modelo coladas en el texto (`[●]`, `XXX`, `[Incluir…]`, `[1]`), demasiadas combinaciones para comprobar si una sección es alcanzable (revísala a mano) y, en plantillas `schema_version` 1, claves desconocidas.
+
+Las opciones de `select` y `multiselect` no pueden empezar ni terminar con espacios. Las claves desconocidas (por ejemplo `whn` en lugar de `when`) son un error en `schema_version` 2 y un aviso en `schema_version` 1, para que las plantillas antiguas sigan siendo válidas.
 
 Redacta los párrafos completos según el modelo verificado. El HTML no invoca al LLM tras abrirse: solo inserta datos y selecciona las variantes previstas en el JSON. Por ello, no uses la plantilla para prometer que generará opiniones, conclusiones u otra redacción que dependa de juicio profesional nuevo.

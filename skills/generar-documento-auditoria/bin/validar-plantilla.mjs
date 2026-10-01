@@ -19,6 +19,14 @@ const FIELD_OPS = {
 const MAX_DEPTH = 3;
 const MAX_COMBINATIONS = 4096;
 const MARKERS = /\[●\]|X{3,}|\[\s*(?:Incluir|Adaptar)[^\]]*\]|\[\^?\d+\s*\]|\[\/?RECUADRO\]/i;
+const KEYS = {
+  spec: ['schema_version', 'title', 'subtitle', 'fields', 'conditions', 'derived', 'sections', 'sources', 'include_sources_in_output'],
+  field: ['id', 'label', 'type', 'required', 'value', 'help', 'options', 'when'],
+  section: ['heading', 'paragraphs', 'when'],
+  source: ['title', 'url'],
+  derived: ['cases', 'default'],
+  derivedCase: ['when', 'text'],
+};
 const own = (object, key) => Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
 
 export function fail(message) { throw new Error(message); }
@@ -150,6 +158,8 @@ function checkField(field, i, ctx) {
   if (field.type === 'select' || field.type === 'multiselect') {
     const options = field.options;
     if (!Array.isArray(options) || !options.length || options.some(x => typeof x !== 'string' || !x.trim()) || new Set(options).size !== options.length) fail(`${path}.options no válido`);
+    const padded = options.find(x => x !== x.trim());
+    if (padded !== undefined) fail(`${path}.options: las opciones no pueden empezar ni terminar con espacios ("${padded}")`);
   } else if (field.type === 'checkbox' && field.options !== undefined) fail(`${path}: un checkbox no admite options`);
   if (field.value !== undefined) {
     if (field.type === 'checkbox') { if (typeof field.value !== 'boolean') fail(`${path}.value debe ser booleano`); }
@@ -159,10 +169,32 @@ function checkField(field, i, ctx) {
   if (field.when !== undefined) ctx.needV2(`${path}.when`);
 }
 
+// Claves no reconocidas, como lista de mensajes `<ruta>: clave desconocida <clave>`.
+export function unknownKeys(spec) {
+  const out = [];
+  const check = (object, allowed, path) => {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return;
+    for (const key of Object.keys(object)) if (!allowed.includes(key)) out.push(`${path ? `${path}: ` : ''}clave desconocida ${key}`);
+  };
+  const each = (list, allowed, prefix) => { if (Array.isArray(list)) list.forEach((item, i) => check(item, allowed, `${prefix}[${i}]`)); };
+  check(spec, KEYS.spec, '');
+  each(spec.fields, KEYS.field, 'fields');
+  each(spec.sections, KEYS.section, 'sections');
+  each(spec.sources, KEYS.source, 'sources');
+  if (spec.derived && typeof spec.derived === 'object' && !Array.isArray(spec.derived)) {
+    for (const [id, definition] of Object.entries(spec.derived)) {
+      check(definition, KEYS.derived, `derived.${id}`);
+      each(definition?.cases, KEYS.derivedCase, `derived.${id}.cases`);
+    }
+  }
+  return out;
+}
+
 export function validate(spec) {
   if (!spec || typeof spec !== 'object' || Array.isArray(spec)) fail('El documento debe ser un objeto JSON');
   if (spec.schema_version !== 1 && spec.schema_version !== 2) fail('schema_version debe ser 1 o 2');
   const v2 = spec.schema_version === 2;
+  if (v2) { const [unknown] = unknownKeys(spec); if (unknown) fail(unknown); }
   const max = v2 ? 80 : 50;
   const fields = new Map();
   const names = new Set();
@@ -359,7 +391,7 @@ function texts(spec) {
 }
 
 export function lint(spec) {
-  const warnings = [];
+  const warnings = spec.schema_version === 1 ? unknownKeys(spec) : [];
   const inserted = new Set();
   for (const [path, text] of texts(spec)) {
     for (const [, id] of text.matchAll(PLACEHOLDER)) inserted.add(id);

@@ -46,6 +46,8 @@
     const preview = byId('preview');
     preview.replaceChildren();
     const output = documentModel || model(data, true);
+    byId('app-title').textContent = output.title;
+    byId('app-subtitle').textContent = output.subtitle || 'Rellena los datos y genera el documento';
     preview.append(element('h2', '', output.title));
     if (output.subtitle) preview.append(element('p', 'subtitle', output.subtitle));
     for (const section of output.sections) {
@@ -125,8 +127,6 @@
     if (field.help) wrapper.append(element('p', 'help', field.help));
     form.append(wrapper);
   }
-  byId('app-title').textContent = spec.title;
-  byId('app-subtitle').textContent = spec.subtitle || 'Rellena los datos y genera el documento';
   const sourceList = byId('source-list');
   for (const source of spec.sources || []) {
     const item = element('li');
@@ -227,7 +227,7 @@
     const blob = docx(finalDocument);
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${spec.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'documento'}.docx`;
+    link.download = `${finalDocument.title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'documento'}.docx`;
     document.body.append(link); link.click(); link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 30000);
   });

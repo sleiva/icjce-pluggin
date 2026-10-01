@@ -1,6 +1,6 @@
 # Plantilla JSON del asistente
 
-La plantilla es un objeto JSON. El renderizador valida la estructura antes de crear el HTML.
+La plantilla es un objeto JSON. El renderizador valida la estructura antes de crear el HTML. Construye `fields` y `sections` después de buscar el modelo con `buscar_modelos_informe`, leerlo con `leer_documento` y completar el inventario de `references/analisis-modelo.md`.
 
 | Propiedad | Tipo | Uso |
 |---|---|---|

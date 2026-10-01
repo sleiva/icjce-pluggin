@@ -3,7 +3,7 @@
 El plugin contiene dos habilidades compartidas por ChatGPT y Claude:
 
 - `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Combina el análisis del modelo, los textos del MCP del ICJCE y la búsqueda web de fuentes oficiales cuando está disponible. Conserva cinco referencias temáticas.
-- `generar-documento-auditoria` prepara un asistente HTML autónomo por conversación para rellenar un modelo de informe, carta u otro documento. El formulario se deriva de un JSON generado por el modelo. Muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
+- `generar-documento-auditoria` localiza primero un modelo con `buscar_modelos_informe`, lee el texto con `leer_documento` y extrae los datos que debe aportar el auditor. A partir de ese análisis prepara un asistente HTML autónomo por conversación. Muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
 
 Ambos clientes quedan configurados para autenticarse con OAuth mediante Auth0. El servidor
 MCP también acepta una API key para otras integraciones, pero este plugin no la solicita ni
@@ -98,7 +98,7 @@ Los esquemas oficiales utilizados están en `tests/schemas/` para validación si
 
 La habilidad `generar-documento-auditoria` trae un renderizador `.mjs` sin dependencias.
 La plantilla JSON describe los campos requeridos, los párrafos y las variantes del modelo.
-El modelo debe leer antes las fuentes del MCP o un modelo aportado por el usuario. El HTML
+El asistente debe buscar primero el modelo en el MCP ICJCE, leerlo y comprobar apartado por apartado qué datos y variantes requiere; si el MCP no está disponible, puede usar un modelo aportado por el usuario o una fuente oficial verificada, indicando la limitación. El HTML
 resultante incorpora todo el código y el logo; no vuelve a consultar al MCP ni envía los
 datos rellenados. La descarga DOCX usa Office Open XML y el botón PDF abre la impresión
 del navegador para elegir **Guardar como PDF**.

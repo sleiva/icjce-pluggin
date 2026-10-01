@@ -41,9 +41,9 @@ Fuera de alcance: grupos (tablas) distintos por destinatario —los grupos sigue
 3. `batch.fields[i]`: identificador que no es un campo (`batch.fields[2]: saldos no es un campo`); campo de tipo `checkbox`, `multiselect` o `group` (`batch.fields[1]: el campo incorrecciones es group y no puede venir del listado`).
 4. `filename` vacío, con marcadores no válidos (mismas reglas que un texto normal) o sin ningún campo del lote (`batch.filename debe usar al menos un campo de batch.fields`).
 
-### Aviso nuevo
+### Aviso
 
-- Campo del lote que no aparece en ningún texto ni en `filename`.
+- Un campo del lote que no aparece en ningún texto, condición ni `filename` recibe el aviso general «no se usa en ningún texto ni condición»; para ello `filename` cuenta como texto en los avisos.
 
 ## 2. Lectura del listado (`assets/tabular.js`)
 
@@ -56,7 +56,7 @@ Módulo sin dependencias que expone `globalThis.DocTabular`; se incrusta en el H
 - `mapRows(spec, table)` → `{ columns, ignored, errors, rows }`, donde `table` es la salida de `parseDelimited` o de `readXlsx`:
   - Primera fila = encabezados. Normalización para comparar: minúsculas, sin tildes, espacios y guiones convertidos a `_`, recortado. Un encabezado corresponde al campo cuyo `id` o `label` normalizado coincide.
   - `columns`: mapa campo → índice de columna. `ignored`: encabezados sin campo (aviso).
-  - `errors` (bloquean la carga): falta la columna de un campo del lote con `required: true`; encabezados que apuntan al mismo campo; ninguna fila de datos; más de 500 filas.
+  - `errors` (bloquean la carga): falta la columna de un campo del lote con `required: true` y sin `when` (un obligatorio condicional se comprueba fila a fila); encabezados que apuntan al mismo campo; ninguna fila de datos; más de 500 filas.
   - `rows`: por fila, `{ values, errors }`. `values` solo contiene campos del lote. Conversión por tipo: `select` → opción equivalente tras normalizar (si no, error `Fila N: "x" no es una opción de <etiqueta>`); `date` → `aaaa-mm-dd` desde `dd/mm/aaaa`, `d/m/aaaa`, `aaaa-mm-dd` o número de serie de Excel (si no, error); `text`/`textarea` con número de Excel → formato `es-ES` con dos decimales si tiene parte decimal y sin decimales si es entero (redondeo a 2). Valores de CSV o pegados se conservan tal cual. `required` vacío en un campo visible para esa fila → error `Fila N: falta <etiqueta>` (la visibilidad se evalúa con `effectiveData` sobre los datos comunes más los de la fila).
 
 ## 3. Asistente y exportación
@@ -86,7 +86,7 @@ Pruebas en `tests/generar-documento/` (`node:test`, sin dependencias):
 
 - `tabular.test.mjs`: `parseDelimited` (tabulador, `;`, `,`, comillas, `""`, saltos dentro de celda, `\r\n`, filas vacías); `decodeText` (UTF-8 con y sin BOM, Windows-1252 con `0xF1`); `readXlsx` con un `.xlsx` sintético construido en la prueba con `zipStore` y `CompressionStream('deflate-raw')` (textos compartidos, texto enriquecido, huecos, número, fecha serial, booleano) y rechazo por tamaño de archivo y de descompresión; `mapRows` (emparejamiento por id y etiqueta, columnas ignoradas, obligatoria ausente, fila con obligatorio vacío, `select` normalizado y erróneo, fechas, número de Excel a `es-ES`, límite de 500 filas, campo con `when` oculto en una fila).
 - `docx.test.mjs`: `docxPackage` de la carta de encargo con los mismos bytes que una referencia capturada del runtime anterior; un ZIP con dos DOCX legible con `DocTabular.readZip`; `safeFilename`.
-- `batch.test.mjs`: rechazo por cada error de la sección 1 y el aviso.
+- `batch.test.mjs`: rechazo por cada error de la sección 1 y el aviso de campo sin uso (también que un campo usado solo en `filename` no lo recibe).
 - `render-docx.test.mjs`: el HTML incrusta `DocTabular` después de `DocExport` y antes del runtime.
 - Plantilla sintética `fixtures/confirmacion-saldos.v2.json` (texto inventado): comunes entidad, fecha de cierre, auditor, dirección de respuesta; lote destinatario, dirección, tratamiento (`select` «Sr.»/«Sres.» con derivado) y saldo.
 - Navegador: pegar 3 filas, subir un `.xlsx` y un `.csv` en Windows-1252, errores por fila, navegación, ZIP con 3 DOCX, PDF con salto de página entre cartas, modo «Un documento» sin cambios.

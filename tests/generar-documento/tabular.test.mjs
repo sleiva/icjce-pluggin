@@ -125,3 +125,51 @@ test('renderText rellena el nombre de archivo con campos y derivados', () => {
   assert.equal(renderText(spec, { destinatario: 'Banco Uno', tratamiento: 'Sr.' }, '{{destinatario}} - {{saludo}}'), 'Banco Uno - Muy señor nuestro:');
   assert.equal(renderText(spec, {}, 'Carta {{destinatario}}', { markMissing: true }), 'Carta [Destinatario]');
 });
+
+test('readXlsx es lineal con miles de <row> sin cerrar', async () => {
+  const bad = '<worksheet><sheetData>' + '<row>'.repeat(50000) + '</sheetData></worksheet>';
+  const zip = zipStore([['xl/workbook.xml', workbook], ['xl/_rels/workbook.xml.rels', rels], ['xl/worksheets/sheet1.xml', bad]]);
+  const start = performance.now();
+  const rows = await readXlsx(zip);
+  assert.deepEqual(rows, []);
+  assert.ok(performance.now() - start < 1000);
+});
+
+test('fechas de Excel fuera de rango dan el error de fila normal', () => {
+  const dated = { ...spec, fields: [...spec.fields, { id: 'vencimiento', label: 'Vencimiento', type: 'date' }], batch: { ...spec.batch, fields: [...spec.batch.fields, 'vencimiento'] } };
+  const table = [['Destinatario', 'Dirección', 'Tratamiento', 'Saldo', 'Vencimiento'], ['A', 'x', 'Sr.', '1', { number: '99999999' }], ['B', 'x', 'Sr.', '1', { number: '1e12' }], ['C', 'x', 'Sr.', '1', { number: '46022' }]];
+  const [a, b, c] = mapRows(dated, table).rows;
+  assert.deepEqual(a.errors, ['Fila 2: "99999999" no es una fecha válida para Vencimiento']);
+  assert.deepEqual(b.errors, ['Fila 3: "1e12" no es una fecha válida para Vencimiento']);
+  assert.deepEqual(c.errors, []);
+});
+
+test('un .xlsx truncado o con deflate corrupto se rechaza como no válido', async () => {
+  const zip = zipStore([['xl/workbook.xml', workbook], ['a.txt', 'x'.repeat(200)]]);
+  const truncated = new Uint8Array([...zip.subarray(0, 60), ...zip.subarray(zip.length - 22)]);
+  await assert.rejects(readXlsx(truncated), /no es un .xlsx válido/);
+  const good = await deflatedZip(xlsxEntries);
+  const corrupt = good.slice();
+  const dv = new DataView(corrupt.buffer);
+  const nameLength = dv.getUint16(26, true);
+  for (let i = 30 + nameLength; i < 30 + nameLength + 8; i++) corrupt[i] = 0xff;
+  await assert.rejects(readXlsx(corrupt), /no es un .xlsx válido/);
+});
+
+test('el límite de columnas cuenta solo encabezados no vacíos', async () => {
+  const headers = Array.from({ length: 51 }, (_, i) => `Col${i}`);
+  const pasted = [headers.join('\t'), headers.map(() => 'x').join('\t')].join('\n');
+  assert.deepEqual(mapRows(spec, parseDelimited(pasted)).errors.filter(e => /columnas$/.test(e)), ['El listado no puede tener más de 50 columnas']);
+  const wide = '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Destinatario</t></is></c><c r="B1" t="inlineStr"><is><t>Dirección</t></is></c><c r="C1" t="inlineStr"><is><t>Tratamiento</t></is></c><c r="D1" t="inlineStr"><is><t>Saldo</t></is></c><c r="AZ1" s="3"/><c r="XFE1"><v>1</v></c></row>'
+    + '<row r="2"><c r="A2" t="inlineStr"><is><t>A</t></is></c></row></sheetData></worksheet>';
+  const rows = await readXlsx(await deflatedZip([['xl/workbook.xml', workbook], ['xl/_rels/workbook.xml.rels', rels], ['xl/worksheets/sheet1.xml', wide]]));
+  assert.ok(rows[0].length <= 52);
+  assert.ok(!mapRows(spec, rows).errors.some(e => /columnas/.test(e)));
+});
+
+test('decodeText lee UTF-16 con BOM (Texto Unicode de Excel)', () => {
+  const le = new Uint8Array([0xff, 0xfe, ...[...'Peña\tx'].flatMap(c => [c.charCodeAt(0) & 255, c.charCodeAt(0) >> 8])]);
+  const be = new Uint8Array([0xfe, 0xff, ...[...'Peña\tx'].flatMap(c => [c.charCodeAt(0) >> 8, c.charCodeAt(0) & 255])]);
+  assert.equal(decodeText(le), 'Peña\tx');
+  assert.equal(decodeText(be), 'Peña\tx');
+});

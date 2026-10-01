@@ -276,6 +276,13 @@ function checkBatch(batch, ctx) {
   checkPlaceholders(batch.filename, 'batch.filename', ctx, true);
   const used = [...batch.filename.matchAll(PLACEHOLDER)].map(m => m[1]);
   if (!used.some(id => batch.fields.includes(id))) fail('batch.filename debe usar al menos un campo de batch.fields');
+  // Un campo común a todas las cartas no puede depender de un valor que cambia por destinatario.
+  ctx.spec.fields.forEach((field, i) => {
+    if (batch.fields.includes(field.id) || field.when === undefined) return;
+    for (const id of fieldsOf(field.when, ctx.spec)) {
+      if (batch.fields.includes(id)) fail(`fields[${i}].when: depende de ${id}, que viene del listado; añádelo a batch.fields`);
+    }
+  });
 }
 
 // Claves no reconocidas, como lista de mensajes `<ruta>: clave desconocida <clave>`.

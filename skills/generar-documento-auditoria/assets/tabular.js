@@ -4,6 +4,7 @@
 (function (root) {
   'use strict';
   const LIMITS = { fileBytes: 5 * 1024 * 1024, unzippedBytes: 20 * 1024 * 1024, rows: 500, columns: 50 };
+  const MAX_COLUMN_INDEX = 16384;
   const fail = message => { throw new Error(message); };
 
   // --- Texto delimitado -------------------------------------------------------
@@ -46,6 +47,8 @@
   }
 
   function decodeText(bytes) {
+    if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes.subarray(2));
+    if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes.subarray(2));
     let data = bytes;
     if (data[0] === 0xef && data[1] === 0xbb && data[2] === 0xbf) data = data.subarray(3);
     try { return new TextDecoder('utf-8', { fatal: true }).decode(data); }
@@ -72,6 +75,10 @@
   }
 
   async function readZip(bytes) {
+    try { return await parseZip(bytes); } catch (error) { return guard(error); }
+  }
+
+  async function parseZip(bytes) {
     if (bytes.length > LIMITS.fileBytes) fail('El archivo supera el máximo de 5 MB');
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     let end = -1;
@@ -115,11 +122,20 @@
     if (code[0] !== '#') return entities[code.toLowerCase()];
     return String.fromCodePoint(code[1].toLowerCase() === 'x' ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10));
   });
-  const textOf = xml => [...xml.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map(m => unescape(m[1])).join('');
+  const textOf = xml => [...xml.matchAll(/<t\b[^<>]*?>((?:(?!<t\b)[\s\S])*?)<\/t>/g)].map(m => unescape(m[1])).join('');
   const attr = (tag, name) => { const m = tag.match(new RegExp(`\\s${name}="([^"]*)"`)); return m ? unescape(m[1]) : null; };
   const columnIndex = ref => [...ref.replace(/\d+$/, '')].reduce((n, char) => n * 26 + char.charCodeAt(0) - 64, 0) - 1;
 
+  const INVALID = 'El archivo no es un .xlsx válido';
+  const KNOWN = /^El archivo (supera|descomprimido|no es un \.xlsx)|^El \.xlsx usa|^No se encuentra|^El listado/;
+  // Cualquier fallo inesperado al leer el archivo se presenta como archivo no válido.
+  const guard = error => { throw error instanceof Error && KNOWN.test(error.message) ? error : new Error(INVALID); };
+
   async function readXlsx(bytes) {
+    try { return await parseXlsx(bytes); } catch (error) { return guard(error); }
+  }
+
+  async function parseXlsx(bytes) {
     const files = await readZip(bytes);
     const read = name => (files.has(name) ? new TextDecoder().decode(files.get(name)) : null);
     const workbook = read('xl/workbook.xml');
@@ -131,16 +147,16 @@
     const target = rel ? attr(rel, 'Target') : 'worksheets/sheet1.xml';
     const sheetXml = read(target.startsWith('/') ? target.slice(1) : `xl/${target}`);
     if (!sheetXml) fail('No se encuentra la primera hoja del .xlsx');
-    const shared = [...(read('xl/sharedStrings.xml') || '').matchAll(/<si>([\s\S]*?)<\/si>/g)].map(m => textOf(m[1]));
+    const shared = [...(read('xl/sharedStrings.xml') || '').matchAll(/<si\b[^<>]*?>((?:(?!<si\b)[\s\S])*?)<\/si>/g)].map(m => textOf(m[1]));
     const rows = [];
-    for (const rowMatch of sheetXml.matchAll(/<row\b[^>]*>([\s\S]*?)<\/row>/g)) {
+    for (const rowMatch of sheetXml.matchAll(/<row\b[^<>]*?(?:\/>|>((?:(?!<row\b)[\s\S])*?)<\/row>)/g)) {
       const cells = [];
-      for (const cell of rowMatch[1].matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+      for (const cell of (rowMatch[1] || '').matchAll(/<c\b([^<>]*?)(?:\/>|>((?:(?!<c\b)[\s\S])*?)<\/c>)/g)) {
         const tag = `<c${cell[1]}>`;
         const body = cell[2] || '';
         const ref = attr(tag, 'r');
         const index = ref ? columnIndex(ref) : cells.length;
-        if (index >= LIMITS.columns) fail(`El listado no puede tener más de ${LIMITS.columns} columnas`);
+        if (index >= MAX_COLUMN_INDEX) continue;
         const type = attr(tag, 't');
         const raw = (body.match(/<v>([\s\S]*?)<\/v>/) || [])[1];
         let value = '';
@@ -164,8 +180,11 @@
   const cellText = cell => (cell && typeof cell === 'object' ? cell.number : (cell || ''));
 
   function excelDate(serial) {
+    const n = Number(serial);
+    if (!(n >= 1 && n <= 2958465)) return null;
     const date = new Date(Date.UTC(1899, 11, 30) + Math.round(Number(serial) * 86400000));
-    return date.toISOString().slice(0, 10);
+    const text = date.toISOString().slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
   }
 
   function toDate(cell) {
@@ -209,6 +228,7 @@
     for (const field of fields) if (field.required && !field.when && columns[field.id] === undefined) errors.push(`Falta la columna obligatoria «${field.label}»`);
     if (!data.length) errors.push('El listado no tiene filas de destinatarios');
     if (data.length > LIMITS.rows) errors.push(`El listado no puede tener más de ${LIMITS.rows} destinatarios`);
+    if (headers.filter(header => normalize(cellText(header))).length > LIMITS.columns) errors.push(`El listado no puede tener más de ${LIMITS.columns} columnas`);
     const rows = data.slice(0, LIMITS.rows).map((cells, k) => {
       const line = k + 2;
       const values = {};

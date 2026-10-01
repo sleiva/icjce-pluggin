@@ -12,6 +12,7 @@
   let mode = 'single';
   let batchTable = null;
   let batchLoadError = '';
+  let batchSource = '';
   let finalDocuments = null;
   let selected = 0;
   const batchFields = new Set(spec.batch ? spec.batch.fields : []);
@@ -156,7 +157,7 @@
     if (batchLoadError) { summary.textContent = ''; errors.append(element('li', '', batchLoadError)); return; }
     if (!state) { summary.textContent = 'Aún no se ha cargado ningún listado.'; return; }
     const recognised = Object.keys(state.columns).map(id => spec.fields.find(field => field.id === id).label);
-    summary.textContent = `${state.rows.length} destinatarios · columnas reconocidas: ${recognised.join(', ') || 'ninguna'}${state.ignored.length ? ` · ignoradas: ${state.ignored.join(', ')}` : ''}`;
+    summary.textContent = `${batchSource ? `Cargado desde ${batchSource}: ` : ''}${state.rows.length} destinatarios · columnas reconocidas: ${recognised.join(', ') || 'ninguna'}${state.ignored.length ? ` · ignoradas: ${state.ignored.join(', ')}` : ''}`;
     const messages = [...state.errors, ...state.rows.flatMap(row => row.errors)];
     for (const message of messages.slice(0, 20)) errors.append(element('li', '', message));
     if (messages.length > 20) errors.append(element('li', '', `… y ${messages.length - 20} más`));
@@ -326,6 +327,7 @@
       button.dataset.mode = value;
       button.addEventListener('click', () => {
         mode = value;
+        batchLoadError = ''; batchSource = '';
         for (const item of bar.children) item.className = item.dataset.mode === mode ? 'mode current' : 'mode';
         finalDocument = null; finalDocuments = null; selected = 0;
         renderPreview();
@@ -359,19 +361,22 @@
     panel.append(paste, file, load, summary, errors, list);
     form.after(panel);
     load.addEventListener('click', async () => {
-      batchLoadError = ''; selected = 0; finalDocument = null; finalDocuments = null;
+      batchLoadError = ''; batchSource = ''; selected = 0; finalDocument = null; finalDocuments = null;
       try {
         const picked = file.files && file.files[0];
         if (picked) {
           if (picked.size > LIMITS.fileBytes) throw new Error('El archivo supera el máximo de 5 MB');
           const bytes = new Uint8Array(await picked.arrayBuffer());
           batchTable = /\.xlsx$/i.test(picked.name) ? await readXlsx(bytes) : parseDelimited(decodeText(bytes));
-        } else if (paste.value.trim()) batchTable = parseDelimited(paste.value);
+          batchSource = picked.name;
+        } else if (paste.value.trim()) { batchTable = parseDelimited(paste.value); batchSource = 'el texto pegado'; }
         else throw new Error('Pega el listado o elige un archivo .xlsx o .csv');
       } catch (error) {
         batchTable = null;
         batchLoadError = error.message;
+        batchSource = '';
       }
+      file.value = '';
       renderPreview();
     });
     const nav = element('div', 'recipient-nav');

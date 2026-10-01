@@ -53,3 +53,15 @@ test('aviso: campo del lote sin uso', () => {
   inName.fields.push({ id: 'extra', label: 'Extra', type: 'text' });
   assert.ok(!lint(validate(inName)).some(w => /campo extra/.test(w)));
 });
+
+test('un campo común no puede depender de un campo del lote, directo o por condición con nombre', () => {
+  const spec = structuredClone(fixture);
+  spec.fields.push({ id: 'cambio', label: 'Cambio', type: 'text', required: true, when: { field: 'moneda', equals: 'Otra' } });
+  spec.sections[1].paragraphs.push('Tipo de cambio: {{cambio}}');
+  const message = /fields\[10\]\.when: depende de moneda, que viene del listado; añádelo a batch\.fields/;
+  assert.throws(() => validate(spec), message);
+  const named = structuredClone(spec);
+  named.conditions = { otra: { field: 'moneda', equals: 'Otra' } };
+  named.fields[10].when = { ref: 'otra' };
+  assert.throws(() => validate(named), message);
+});

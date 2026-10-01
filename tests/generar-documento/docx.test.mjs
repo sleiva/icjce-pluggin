@@ -29,3 +29,7 @@ test('tabla con cabecera repetida, filas que no se parten y texto escapado', () 
 test('lista con viñetas', () => {
   assert.equal(listXml(['Uno', 'Dos & tres']), '<w:p><w:pPr><w:ind w:left="360" w:hanging="240"/></w:pPr><w:r><w:t xml:space="preserve">• Uno</w:t></w:r></w:p><w:p><w:pPr><w:ind w:left="360" w:hanging="240"/></w:pPr><w:r><w:t xml:space="preserve">• Dos &amp; tres</w:t></w:r></w:p>');
 });
+
+test('xml descarta caracteres de control no válidos en XML 1.0', () => {
+  assert.equal(globalThis.DocExport.xml('a\u0001b\u000bc\td\ne'), 'abc\td\ne');
+});

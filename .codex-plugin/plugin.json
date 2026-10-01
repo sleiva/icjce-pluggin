@@ -1,6 +1,6 @@
 {
   "name": "icjce-auditoria",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "Asistente de auditoría en España con el MCP del ICJCE: consulta normativa y prepara documentos mediante formularios HTML exportables a DOCX o PDF.",
   "author": {
     "name": "sergioleivaortega",

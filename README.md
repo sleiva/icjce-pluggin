@@ -1,115 +1,92 @@
-# Plugin ICJCE para Claude Code
+# ICJCE Auditoría — ChatGPT y Claude
 
-Convierte a Claude en un **técnico de auditoría del ICJCE**: responde a preguntas de auditores de
-cuentas en España leyendo la norma vigente y la doctrina oficial en las fuentes, y citándolas con
-enlace. Lo que el modelo sabe de memoria solo le sirve para saber qué buscar.
+Dos skills compartidas para responder a consultas de auditoría en España leyendo las fuentes
+y citándolas: `experto-auditoria-icjce` organiza las materias; `consultar-icjce-mcp` guía las
+consultas al servidor. Las cinco referencias temáticas existentes se conservan.
 
-Trae dos skills, que se cargan solas cuando la pregunta lo pide:
+Ambos clientes quedan configurados para autenticarse con OAuth mediante Auth0. El servidor
+MCP también acepta una API key para otras integraciones, pero este plugin no la solicita ni
+la almacena.
 
-| Skill | Qué hace |
-|---|---|
-| `experto-auditoria-icjce` | La persona del experto. Clasifica la pregunta y carga la referencia de su área: auditoría (NIA-ES, LAC/RLAC/RUE, informe), independencia, calidad (NIGC 1-ES y 2-ES), contabilidad (PGC, RICAC, consultas del ICAC) u otras actuaciones (procedimientos acordados, revisión limitada, informes especiales) |
-| `consultar-icjce-mcp` | Cómo se usan las tools del MCP: cuál va primero, cómo se cita y qué hacer si el MCP no está |
+| Cliente | Archivos del plugin | Inicio de sesión |
+|---|---|---|
+| ChatGPT / Agent Plugins 1.0 | `plugin.json`, `mcp.json`, `skills/` | OAuth con Auth0 al conectar el MCP |
+| App de Claude (chat y Cowork) | `.claude-plugin/plugin.json`, `.mcp.json`, el mismo `skills/` | OAuth con Auth0 al conectar el MCP remoto |
 
-**Las skills no sirven sin el MCP del ICJCE**: son un índice de qué buscar y con qué tool; el
-contenido (el artículo, la circular, la consulta) lo trae el MCP. Sin él, el experto no debe
-responder como si lo hubiera consultado.
+## Endpoint
 
-## 1. Instalar el plugin
+```text
+https://icjce-api.nappai.tech/api/v2/mcp/6efc4933-077e-4dc0-b8d0-2a5cb46bf54a/mcp
+```
+
+El transporte es Streamable HTTP. Los dos archivos MCP contienen solo esta URL, sin
+cabeceras de autenticación. El servidor publica los metadatos OAuth en:
+
+```text
+https://icjce-api.nappai.tech/.well-known/oauth-protected-resource
+```
+
+No pegues contraseñas, tokens ni API keys en el chat.
+
+## App de Claude: instalación y OAuth
+
+En Claude, abre **Customize > Plugins > Add > Add marketplace** y añade
+`https://github.com/sleiva/icjce-pluggin`. Instala `icjce-auditoria` desde ese marketplace.
+El plugin incluye la dirección pública del MCP, sin API key. Sigue el inicio de sesión de
+Auth0 cuando Claude te pida conectar el servidor. En **Customize > Connectors** puedes
+comprobar la conexión y, si hace falta, volver a autenticarla.
+
+También puedes subir el ZIP del plugin desde **Customize > Plugins**. El plugin instalado en
+tu cuenta queda disponible en el chat de Claude y en Cowork. Si ya tenías un conector ICJCE
+añadido manualmente, comprueba cuál usa el plugin para evitar dos conexiones al mismo servidor.
+
+Referencias: [plugins en Claude](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)
+y [conectores MCP remotos](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
+
+## ChatGPT: instalación y OAuth
+
+El ZIP contiene un único directorio `icjce-auditoria/`, con manifiesto Agent Plugins 1.0.
+Puedes guardarlo como plugin privado mediante Plugin Creator, pasando el ZIP; después abre
+el enlace que devuelve y habilita el plugin en tu cuenta o espacio de trabajo.
+Crear o instalar el plugin no autentica el MCP. Al conectar el servidor, autoriza el acceso
+en la pantalla de Auth0 con tu usuario. ChatGPT descubre el proveedor de identidad mediante
+la respuesta `401` y los metadatos publicados por el servidor. El `mcp.json` no contiene
+credenciales. Si ya tenías el plugin instalado, actualízalo antes de volver a conectar el MCP.
+
+Referencia: [autenticación de plugins en ChatGPT](https://developers.openai.com/plugins/build/auth).
+
+## Verificación funcional
+
+1. Habilita el plugin en ChatGPT o en la app de Claude y completa el inicio de sesión en Auth0.
+2. Comprueba que el MCP conecta y descubre operaciones como `indice_norma` y `leer_articulo`.
+3. Solicita una consulta de auditoría con citas. Revisa que realmente llama al MCP y enlaza
+   las URLs devueltas, sin inventarlas.
+4. Sin conexión, comprueba que avisa de la limitación en lugar de fingir una consulta.
+
+La validación estática no prueba el inicio de sesión ni las respuestas normativas. El
+01-10-2026 se comprobó que el endpoint público devuelve metadatos OAuth, exige autenticación
+con `401` y publica 9 herramientas. El inicio de sesión interactivo en ChatGPT y la app de
+Claude queda pendiente de probar con un usuario de Auth0.
+
+## Mantenimiento y ZIP
+
+`skills/` es la única copia consumida por ambos clientes. El backend de NappAI es el origen
+histórico del contenido; `scripts/sincroniza.sh /ruta/al/backend` importa sus skills y
+**sobrescribe las adaptaciones locales**. Revisa el diff y conserva las reglas de portabilidad
+antes de publicar. El validador detecta la reintroducción de prefijos de cliente y del marcador
+antiguo de sub-skill. No ejecutes la sincronización como parte del empaquetado.
+
+Mantén iguales los metadatos y la versión en `plugin.json`, `.codex-plugin/plugin.json` y
+`.claude-plugin/plugin.json`.
+El marketplace existente se conserva con su identidad `icjce` y origen local `./`.
 
 ```sh
-claude plugin marketplace add sleiva/icjce-pluggin
-claude plugin install icjce-auditoria@icjce
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python scripts/validate.py
+.venv/bin/python scripts/package.py --output dist
 ```
 
-Actualizar a la última versión: `claude plugin update icjce-auditoria@icjce`.
-
-## 2. Instalar el MCP del ICJCE
-
-El MCP es un servidor HTTP (Streamable HTTP) que sirve NappAI desde un flujo con el componente
-**ICJCE MCP Server**. Necesitas dos datos:
-
-- **La URL del servidor**: `https://<host>/api/v2/mcp/<flow_id>/mcp`, donde `<flow_id>` es el
-  identificador del flujo que tiene el componente ICJCE MCP Server. En desarrollo:
-  `http://localhost:5163/api/v2/mcp/<flow_id>/mcp`.
-- **Tu API key de NappAI**, que va en la cabecera `x-api-key`.
-
-Regístralo con el nombre **`icjce`** —las skills llaman a las tools como `mcp__icjce__…`, así que
-con otro nombre no las encuentran—:
-
-```sh
- claude mcp add --scope user --transport http icjce \
-  "https://<host>/api/v2/mcp/<flow_id>/mcp" \
-  --header "x-api-key: PEGA_TU_API_KEY"
-```
-
-La línea empieza con un espacio a propósito: con `setopt HIST_IGNORE_SPACE` (zsh) o
-`HISTCONTROL=ignorespace` (bash) la key no queda en el historial del shell. La credencial se
-guarda en tu configuración de usuario (`~/.claude.json`). Volver a ejecutar el comando
-**reemplaza** el registro: es también la forma de rotar la key.
-
-**No pegues la key en el chat**: lo que se escribe ahí queda en la conversación y viaja al modelo.
-
-### Comprobar que funciona
-
-1. Reabre Claude Code y ejecuta `/mcp`: `icjce` debe salir **connected**, con sus tools
-   (`indice_norma`, `leer_articulo`, `buscar_documentos`, `mapa_independencia`…).
-2. Pregunta algo que solo se responde leyendo la norma, por ejemplo:
-   *«¿Puede el auditor de una EIP prestarle servicios de valoración? Cita el precepto.»*
-   La respuesta debe citar con enlace (BOE, EUR-Lex, ICAC, ICJCE) y en la traza deben verse
-   llamadas a `mcp__icjce__…`.
-
-Si el MCP no conecta, Claude **responde igual pero sin tools**, de memoria y sin avisar. Por eso
-la comprobación del punto 2 importa: si no ves llamadas a `mcp__icjce__…`, el MCP no está.
-
-### Sin registrarlo (solo para una sesión)
-
-```sh
-claude --mcp-config '{"mcpServers":{"icjce":{"type":"http","url":"https://<host>/api/v2/mcp/<flow_id>/mcp","headers":{"x-api-key":"PEGA_TU_API_KEY"}}}}'
-```
-
-Deja la key en el historial y en la lista de procesos: úsalo solo para probar.
-
-### Claude Desktop / otros clientes
-
-Añade el servidor en la configuración MCP del cliente:
-
-```json
-{
-  "mcpServers": {
-    "icjce": {
-      "type": "http",
-      "url": "https://<host>/api/v2/mcp/<flow_id>/mcp",
-      "headers": { "x-api-key": "PEGA_TU_API_KEY" }
-    }
-  }
-}
-```
-
-## Desinstalar
-
-```sh
-claude mcp remove icjce --scope user
-claude plugin uninstall icjce-auditoria@icjce
-```
-
----
-
-## Para quien mantiene esto
-
-Las skills **no se editan aquí**. Su fuente vive en el backend de NappAI, junto al código del MCP
-(`nappai/base/kgraph/auditoriaV2/mcp/experto-auditoria-icjce/` y `.../consultar-icjce-mcp/`),
-donde unos tests vigilan que no deriven. Para publicar una versión:
-
-```sh
-scripts/sincroniza.sh /ruta/a/nappai-ai-backend   # copia las skills desde el backend
-# sube "version" en .claude-plugin/plugin.json
-git add -A && git commit -m "…" && git push
-```
-
-| Fichero | Qué es |
-|---|---|
-| `.claude-plugin/plugin.json` | La ficha del plugin: nombre, versión, descripción. El único sitio donde se toca la versión |
-| `.claude-plugin/marketplace.json` | Lo que permite `claude plugin marketplace add sleiva/icjce-pluggin` |
-| `skills/` | Copia de las skills del backend (no editar a mano) |
-| `scripts/sincroniza.sh` | Copia las skills desde el backend |
+El empaquetador incluye solo manifiestos, documentación y skills, con los archivos ocultos
+necesarios para Claude. Excluye Git, entornos, credenciales y herramientas de desarrollo.
+Los esquemas oficiales utilizados están en `tests/schemas/` para validación sin red.

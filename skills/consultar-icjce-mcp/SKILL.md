@@ -7,7 +7,22 @@ description: Úsala cuando respondas a un auditor de cuentas en España con el M
 
 ## Principio
 
-La respuesta sale **de lo que devuelven las tools, no de memoria**. Tu conocimiento tiene fecha de corte; el MCP tiene las circulares, guías y normas vigentes hoy (incluidas las de 2026, que son reales).
+Fundamenta los datos normativos y doctrinales en fuentes leídas con las herramientas disponibles. Usa el MCP para consultar su corpus y complétalo con otras herramientas pertinentes cuando ayuden a analizar el caso o verificar fuentes oficiales. Tu conocimiento sirve para razonar y orientar la búsqueda, no para afirmar de memoria qué norma o circular está vigente.
+
+## Descubrimiento independiente del cliente
+
+Los nombres cortos de la tabla son operaciones esperadas del MCP ICJCE, no nombres completos
+que debas construir. Descubre las herramientas que el cliente tenga conectadas; identifica
+el servidor ICJCE por su procedencia, descripciones y esquemas. Usa el nombre completo que
+exponga el cliente y los argumentos de su esquema real. No dependas de un prefijo, de que
+el usuario haya llamado `icjce` a la conexión, ni de una herramienta de búsqueda concreta.
+Si una operación cambia de nombre, solo usa su equivalente cuando la descripción y el esquema
+confirmen la misma función. No inventes operaciones ni argumentos no anunciados.
+
+Los parámetros y ejemplos siguientes orientan la consulta; comprueba primero que el esquema
+real los admite. Si las tools no están cargadas, usa el mecanismo de descubrimiento del cliente
+si existe. No leas credenciales ni pidas pegarlas en el chat: la conexión se configura fuera de
+la conversación siguiendo el README del plugin.
 
 ## Si las tools no están o fallan
 

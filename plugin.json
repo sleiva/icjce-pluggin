@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "icjce-auditoria",
+  "version": "0.3.1",
+  "description": "Experto en auditoría de cuentas en España con el MCP del ICJCE: normativa (LAC, RLAC, RUE, NIA-ES, NIGC), independencia, calidad, contabilidad y otras actuaciones, leída en las fuentes y citada con enlace.",
+  "author": {
+    "name": "sergioleivaortega",
+    "email": "sleiva@xone.es"
+  },
+  "keywords": [
+    "auditoria",
+    "icjce",
+    "nia-es",
+    "lac",
+    "mcp"
+  ],
+  "repository": "https://github.com/sleiva/icjce-pluggin",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "ICJCE Auditoría",
+        "shortDescription": "Normativa y doctrina auditora",
+        "longDescription": "Consulta normativa y doctrina de auditoría en España mediante el MCP del ICJCE. ChatGPT y la app de Claude se conectan con OAuth y el inicio de sesión de Auth0; las respuestas citan las fuentes consultadas.",
+        "developerName": "sergioleivaortega",
+        "category": "Productivity",
+        "defaultPrompt": "Consulta las fuentes del ICJCE para resolver mi duda de auditoría y cita los documentos utilizados. Si el MCP no está conectado, indícalo."
+      }
+    }
+  }
+}

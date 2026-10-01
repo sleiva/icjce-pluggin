@@ -5,7 +5,7 @@
     "email": "sleiva@xone.es"
   },
   "metadata": {
-    "description": "Plugins del ICJCE para Claude Code: el experto en auditoría de cuentas en España sobre el MCP del ICJCE."
+    "description": "Plugin de auditoría de cuentas en España para la app de Claude con el MCP del ICJCE."
   },
   "plugins": [
     {

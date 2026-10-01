@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "icjce": {
+      "type": "http",
+      "url": "https://icjce-api.nappai.tech/api/v2/mcp/6efc4933-077e-4dc0-b8d0-2a5cb46bf54a/mcp"
+    }
+  }
+}

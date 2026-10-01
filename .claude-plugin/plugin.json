@@ -1,10 +1,17 @@
 {
   "name": "icjce-auditoria",
-  "version": "0.1.0",
+  "version": "0.3.1",
   "description": "Experto en auditoría de cuentas en España con el MCP del ICJCE: normativa (LAC, RLAC, RUE, NIA-ES, NIGC), independencia, calidad, contabilidad y otras actuaciones, leída en las fuentes y citada con enlace.",
   "author": {
     "name": "sergioleivaortega",
     "email": "sleiva@xone.es"
   },
-  "keywords": ["auditoria", "icjce", "nia-es", "lac", "mcp"]
+  "keywords": [
+    "auditoria",
+    "icjce",
+    "nia-es",
+    "lac",
+    "mcp"
+  ],
+  "repository": "https://github.com/sleiva/icjce-pluggin"
 }

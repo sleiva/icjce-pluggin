@@ -45,6 +45,8 @@ Recorre el texto leído buscando **cada** marca de variación, no solo los hueco
 | Fila de total o importes calculados | campo `text` normal (aún no hay cálculos), con `when` `filled` sobre el grupo si solo aplica cuando hay filas |
 | Una variación que ninguna pieza representa fielmente | pregunta al usuario o prepara asistentes separados; nunca la aproximes |
 
+Si el modelo es una carta que se envía con el mismo texto a varios destinatarios (circularizaciones de bancos, clientes, proveedores o asesores legales), pon los datos propios de cada destinatario (nombre, dirección, tratamiento, saldo…) en `batch.fields` y deja el resto como datos comunes; `batch.filename` debe identificar al destinatario. Los anexos o tablas distintos por destinatario (por ejemplo, la relación de litigios de cada despacho) todavía no admiten lote: díselo al usuario y prepara la tabla como grupo común o cartas separadas.
+
 Cuando la misma lógica se repite en varios sitios (por ejemplo «opinión modificada»), defínela una vez en `conditions` y úsala con `ref`.
 
 ## 5. Traducir al JSON y comprobar cobertura

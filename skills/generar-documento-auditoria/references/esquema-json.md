@@ -12,6 +12,7 @@ Usa `schema_version: 2` cuando el modelo tenga variación (cláusulas opcionales
 | `fields` | lista de objetos | Entre 1 y 50 campos (80 en v2). |
 | `conditions` | objeto opcional (v2) | Condiciones con nombre reutilizables. |
 | `derived` | objeto opcional (v2) | Textos derivados para lo que cambia dentro de la frase. |
+| `batch` | objeto opcional (v2) | Generación por lotes: qué campos vienen de un listado de destinatarios. |
 | `sections` | lista de objetos | Entre 1 y 50 secciones (80 en v2). |
 | `sources` | lista opcional | Hasta 20 objetos `{ "title": "…", "url": "https://…" }`. |
 | `include_sources_in_output` | booleano opcional | Si es `true`, añade las fuentes al documento; por defecto solo se muestran en la interfaz. |
@@ -121,6 +122,26 @@ Para lo que cambia dentro de la frase. Gana el primer caso cuya condición se cu
 ```
 
 En títulos, encabezados y párrafos se usan como un campo: `{{socios}}`, `{{por_encargo}}`.
+
+## Generación por lotes (v2)
+
+Para cartas que se envían con el mismo texto a muchos destinatarios (circularizaciones a bancos, clientes, proveedores, asesores legales). El auditor rellena los datos comunes, carga un listado y descarga un ZIP con un DOCX por destinatario o un PDF con todas las cartas.
+
+```json
+"batch": {
+  "label": "Destinatarios",
+  "fields": ["destinatario", "direccion", "tratamiento", "saldo"],
+  "filename": "Confirmación {{destinatario}}"
+}
+```
+
+- `label`: título de la sección del listado.
+- `fields`: entre 1 y 20 campos ya declarados en `fields`, de tipo `text`, `textarea`, `date` o `select`, cuyos valores vienen del listado. Pueden tener `required` y `when`; se evalúan fila a fila con los datos comunes y los de la fila. Los grupos (`group`) son comunes a todo el lote.
+- `filename`: nombre de cada DOCX; admite `{{campo}}` y `{{derivado}}` y debe usar al menos un campo de `fields`. Se quitan los caracteres no válidos y los duplicados se numeran («(2)», «(3)»).
+- El listado se pega desde Excel (con la fila de encabezados) o se sube como `.xlsx` (primera hoja) o `.csv` (`;`, `,` o tabulador; UTF-8 o Windows-1252). Máximo 500 destinatarios, 50 columnas y 5 MB.
+- Cada encabezado se empareja con el identificador o la etiqueta de un campo del lote, sin distinguir mayúsculas, tildes ni espacios frente a guiones bajos. Las columnas sin campo se ignoran con aviso. Falta de una columna obligatoria (sin `when`), dos columnas para el mismo campo o un listado vacío bloquean la carga.
+- Por fila: un `select` acepta la opción sin distinguir mayúsculas ni tildes; una fecha acepta `dd/mm/aaaa`, `aaaa-mm-dd` o fecha de Excel y se guarda como `aaaa-mm-dd`; un número de Excel en un campo de texto se escribe en formato español («1.234,50», «1.234»); un obligatorio visible vacío es un error de esa fila. No se genera el lote mientras haya errores.
+- El modo «Un documento» sigue disponible: los campos del lote se rellenan a mano.
 
 ## Marcadores
 

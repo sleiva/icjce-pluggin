@@ -42,7 +42,10 @@ Recorre el texto leído buscando **cada** marca de variación, no solo los hueco
 | Tabla con columnas fijas y filas que rellena el auditor (incorrecciones, honorarios, amenazas y salvaguardas) | `group` con un subcampo por columna + `repeat` con `as: "table"` |
 | Enumeración de elementos («[enumerar documentos]», asuntos pendientes) | `group` + `repeat` con `as: "list"` |
 | Bloque de párrafos por elemento (cada deficiencia con su recomendación, cada carta de abogado) | `group` + `repeat` con `as: "blocks"`; si el modelo prevé un texto para cuando no hay elementos, ponlo en `empty` |
-| Fila de total o importes calculados | campo `text` normal (aún no hay cálculos), con `when` `filled` sobre el grupo si solo aplica cuando hay filas |
+| Importes y cantidades del modelo (saldos, honorarios, cifras de las cuentas) | campo `number` con `unit`; los códigos postales, NIF o teléfonos son `text` |
+| Fila de total de una tabla | `computed` con `sum(grupo.subcampo)` sobre un subcampo `number` |
+| Cálculos del encargo (materialidad, materialidad de ejecución, umbral de claramente triviales, porcentajes) | `computed` con la fórmula que describe el modelo o la norma; los porcentajes se escriben como se leen y se dividen por 100 |
+| Umbrales («si las incorrecciones superan la materialidad…», «cuando los honorarios excedan…») | condición con `gt`, `gte`, `lt`, `lte` o `eq` sobre campos numéricos |
 | Una variación que ninguna pieza representa fielmente | pregunta al usuario o prepara asistentes separados; nunca la aproximes |
 
 Si el modelo es una carta que se envía con el mismo texto a varios destinatarios (circularizaciones de bancos, clientes, proveedores o asesores legales), pon los datos propios de cada destinatario (nombre, dirección, tratamiento, saldo…) en `batch.fields` y deja el resto como datos comunes; `batch.filename` debe identificar al destinatario. Los anexos o tablas distintos por destinatario (por ejemplo, la relación de litigios de cada despacho) todavía no admiten lote: díselo al usuario y prepara la tabla como grupo común o cartas separadas.

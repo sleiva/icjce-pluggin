@@ -66,7 +66,7 @@ def validate():
     renderer = ROOT / 'skills/generar-documento-auditoria'
     for relative in ('bin/generar-documento.mjs', 'bin/validar-plantilla.mjs',
                      'assets/assistant.html', 'assets/assistant-runtime.js',
-                     'assets/evaluator.js', 'assets/docx.js', 'assets/tabular.js', 'assets/icjce-logo.png',
+                     'assets/evaluator.js', 'assets/numbers.js', 'assets/docx.js', 'assets/tabular.js', 'assets/icjce-logo.png',
                      'examples/carta-encargo.json', 'references/esquema-json.md'):
         assert (renderer / relative).is_file(), relative
     tests = sorted(str(path) for path in (ROOT / 'tests/generar-documento').glob('*.test.mjs'))

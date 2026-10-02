@@ -96,7 +96,7 @@ Para tablas, enumeraciones y bloques que se repiten por elemento (incorrecciones
 - `required` del grupo: al menos una fila con contenido; `required` de un subcampo: obligatorio en cada fila con contenido. Las filas en blanco se ignoran.
 - `min_rows` y `max_rows`: enteros entre 0 y 50 (por defecto 0 y 50); `max_rows` debe ser al menos 1 y `min_rows` no puede superar a `max_rows`. `value`: filas iniciales, como lista de objetos `{ "subcampo": "texto" }`.
 - Los identificadores de subcampo no pueden repetir ningún otro identificador. Un subcampo solo puede usarse dentro de los `repeat` de su grupo; no en condiciones ni en otros textos.
-- Importes y totales son texto: la fila de total se pide como un campo normal (por ejemplo, con `when: { "field": "incorrecciones", "filled": true }`).
+- Los importes de una columna son subcampos `number`; la fila de total es un campo `computed` con `sum(grupo.subcampo)` (ver «Números y cálculos (v2)»), que puede llevar `when: { "field": "<grupo>", "filled": true }` si solo debe aparecer cuando hay filas.
 
 Párrafo `repeat`, en cualquier lugar de `paragraphs`:
 
@@ -124,7 +124,7 @@ Usa `number` solo para importes, porcentajes y cantidades; los códigos postales
 { "id": "total_incorrecciones", "label": "Total", "type": "computed", "expr": "sum(incorrecciones.importe)", "unit": "€" }
 ```
 
-- `number`: `decimals` (0 a 6, por defecto 2) y `unit` (texto de hasta 30 caracteres, opcional). El auditor puede escribir «1.234,56», «1234,56» o «1234.56»; «1.234» se lee como mil doscientos treinta y cuatro. Un valor no numérico se marca y bloquea la generación. Se admite también como subcampo de un `group` y como campo de `batch.fields`.
+- `number`: `decimals` (0 a 6, por defecto 2) y `unit` (texto de hasta 30 caracteres, opcional). El auditor puede escribir «1.234,56», «1234,56» o «1234.56»; «1.234» se lee como mil doscientos treinta y cuatro. Un valor no numérico se marca y bloquea la generación. Su `value` inicial, si se indica, debe ser un número escrito de forma válida. Se admite también como subcampo de un `group` y como campo de `batch.fields`.
 - `computed`: `expr` obligatoria (hasta 500 caracteres y 10 niveles de paréntesis), `decimals`, `unit`, `help` y `when`. La fórmula admite números (con punto decimal), campos `number` o `computed` **declarados antes**, `+ - * /`, paréntesis, `sum(grupo.subcampo)` (subcampo `number`; suma las filas con contenido; 0 sin filas), `min(a, b, …)`, `max(a, b, …)`, `round(x, n)` (n fijo de 0 a 6) y `abs(x)`. Sin `eval`: cualquier otra cosa es un error con su posición.
 - Los porcentajes se escriben como se leen (5 es un 5 %): divide por 100 en la fórmula.
 - Si falta un dato, hay un número no válido o una división por cero, el cálculo queda sin valor: `[Etiqueta]` en la vista previa y vacío en el documento. Se calcula con precisión completa y se redondea al mostrarlo (medio hacia arriba); usa `round` para redondear un paso intermedio.

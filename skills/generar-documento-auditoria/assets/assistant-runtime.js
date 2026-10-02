@@ -78,6 +78,12 @@
         continue;
       }
       // Un grupo cuenta si exige filas o si alguna fila rellena tiene subcampos obligatorios.
+      const wrong = [...wrappers[field.id].querySelectorAll('input[data-number]')].find(input => badNumber(input.value));
+      if (wrong) {
+        required.push(field);
+        missing.push({ field, focus: wrong, message: `Escribe un número válido en «${field.label}»` });
+        continue;
+      }
       const needed = Math.max(field.required ? 1 : 0, field.min_rows || 0);
       const cards = groupRows(field);
       const filled = cards.filter((card, k) => filledRows(field, [data[field.id][k]]).length);
@@ -89,9 +95,7 @@
         if (sub) { focus = card.querySelector(`[data-sub="${sub.id}"]`); break; }
       }
       if (!focus && filled.length < needed) focus = cards.find(card => !filled.includes(card))?.querySelector('[data-sub]') || wrappers[field.id].querySelector('.add-row');
-      const wrong = [...wrappers[field.id].querySelectorAll('input[data-number]')].find(input => badNumber(input.value));
-      if (wrong) missing.push({ field, focus: wrong, message: `Escribe un número válido en «${field.label}»` });
-      else if (focus) missing.push({ field, focus });
+      if (focus) missing.push({ field, focus });
     }
     // En modo lote el listado cuenta como un campo obligatorio más.
     if (inBatch()) {

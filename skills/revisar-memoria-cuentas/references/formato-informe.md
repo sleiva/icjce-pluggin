@@ -17,14 +17,16 @@ Número de **omisiones**, de requisitos **incompletos** y de puntos **a verifica
 | Nota del modelo | Requisito | Estado | Observación | Fuente |
 |---|---|---|---|---|
 
-- Una fila por requisito relevante del modelo de memoria del marco; agrupa los que se cumplen sin incidencias si la tabla se hace muy larga, pero no omitas ninguna omisión ni incompleto.
-- Estados: Omisión, Incompleto, No aplica, A verificar.
+- Una fila por requisito con incidencia o que no aplica; no omitas ninguna omisión ni incompleto. Los requisitos que se cumplen no llevan fila ni estado: enuméralos en una frase debajo de la tabla («Sin incidencias: …»).
+- Estados: solo Omisión, Incompleto, No aplica o A verificar; no uses otros (como «Correcto», «Sin incidencia» o «Coincide»).
 - Fuente: enlace del MCP o URL oficial; «conocimiento del modelo, sin contrastar» si es el caso.
 
 ## 4. Cruces con los estados
 
 | Cruce | Estados | Memoria | Diferencia | Estado |
 |---|---|---|---|---|
+
+- Una fila por cruce con diferencia o que no se puede hacer porque falta la información; estado «A verificar» u «Omisión». Los cruces que coinciden se enumeran en una frase debajo de la tabla («Coinciden: …»), sin estado.
 
 ## 5. Puntos a revisar por el auditor
 

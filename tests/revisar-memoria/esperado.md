@@ -24,4 +24,4 @@ Prueba de comportamiento de `revisar-memoria-cuentas` sobre `cuentas-sinteticas.
 
 ## Otras detecciones legítimas
 
-Las cuentas tienen otras carencias no sembradas que un buen revisor puede señalar; no cuentan como falsos positivos ni como fallo de la prueba: número medio de personas empleadas sin desglose por categorías (y por sexo, si el modelo del marco lo exige), retribuciones y anticipos a los administradores, desglose del importe neto de la cifra de negocios e información sobre medio ambiente.
+Las cuentas tienen otras carencias no sembradas que un buen revisor puede señalar; no cuentan como falsos positivos ni como fallo de la prueba: número medio de personas empleadas sin desglose por categorías (y por sexo, si el modelo del marco lo exige), retribuciones y anticipos a los administradores, desglose del importe neto de la cifra de negocios, información sobre medio ambiente, amortización del intangible incoherente con su vida útil, vencimientos y clasificación de la deuda bancaria y gastos financieros desproporcionados respecto de la deuda remunerada.

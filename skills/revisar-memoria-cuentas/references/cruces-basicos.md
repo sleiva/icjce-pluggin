@@ -16,9 +16,9 @@ Usa esta lista para que ninguna partida significativa de los estados quede sin s
 | Subvenciones, donaciones o legados | Importe, origen y criterios de imputación |
 | Saldos o transacciones con empresas del grupo, asociadas, socios o administradores | Operaciones con partes vinculadas (naturaleza, saldos, transacciones) y retribuciones de administradores y alta dirección cuando proceda |
 | Gastos de personal | Número medio de personas empleadas con el desglose que exija el modelo del marco |
-| Honorarios de auditoría | Honorarios por la auditoría y por otros servicios cuando proceda |
-| Acreedores comerciales | Periodo medio de pago a proveedores (Ley 15/2010 y su resolución del ICAC) |
-| Cualquier entidad | Hechos posteriores al cierre, aplicación del resultado, bases de presentación (imagen fiel, comparación, cambios de criterio, errores) |
+| Cuentas auditadas | Honorarios por la auditoría y por otros servicios, cuando el modelo del marco lo exija |
+| Acreedores comerciales | Periodo medio de pago a proveedores (Ley 15/2010, disposición adicional tercera; Ley 3/2004; resolución del ICAC), con la información adicional que el texto vigente exija según el tamaño |
+| Cualquier entidad | Hechos posteriores al cierre, aplicación del resultado, bases de presentación (imagen fiel, aspectos críticos de la valoración y estimación de la incertidumbre, empresa en funcionamiento, comparación, cambios de criterio, errores) |
 | Actividad con impacto ambiental | Información sobre medio ambiente cuando proceda |
 
 ## 2. Cifras que deberían coincidir

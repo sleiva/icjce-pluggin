@@ -1,6 +1,7 @@
 (() => {
   'use strict';
   const { buildModel, effectiveData, filledRows, isEmpty, renderText } = globalThis.DocEvaluator;
+  const { parseNumber, formatNumber } = globalThis.DocNumbers;
   const { docxPackage, zipStore, safeFilename } = globalThis.DocExport;
   const { LIMITS, parseDelimited, decodeText, readXlsx, mapRows } = globalThis.DocTabular;
   const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -44,7 +45,7 @@
       if (field.type === 'checkbox') data[field.id] = byId(`field-${field.id}`).checked;
       else if (field.type === 'multiselect') data[field.id] = [...form.querySelectorAll(`input[name="${field.id}"]:checked`)].map(input => input.value);
       else if (field.type === 'group') data[field.id] = groupRows(field).map(card => Object.fromEntries(field.fields.map(sub => [sub.id, card.querySelector(`[data-sub="${sub.id}"]`).value])));
-      else data[field.id] = byId(`field-${field.id}`).value;
+      else if (field.type !== 'computed') data[field.id] = byId(`field-${field.id}`).value;
     }
     return data;
   };
@@ -57,12 +58,19 @@
   const model = (data, markMissing = false) => buildModel(spec, data, { markMissing });
   const groupRows = field => [...wrappers[field.id].querySelectorAll(':scope > .group-rows > .group-row')];
   // Campos que cuentan para el progreso y primer elemento al que llevar el foco.
+  const badNumber = text => Number.isNaN(parseNumber(text));
   const requirement = data => {
-    const { data: effective, visible } = effectiveData(spec, data);
+    const { data: effective, visible, invalid } = effectiveData(spec, data);
     const required = [];
     const missing = [];
     for (const field of spec.fields) {
-      if (!visible[field.id] || (inBatch() && batchFields.has(field.id))) continue;
+      if (!visible[field.id] || (inBatch() && batchFields.has(field.id)) || field.type === 'computed') continue;
+      // Un número mal escrito bloquea aunque el campo no sea obligatorio.
+      if (field.type === 'number' && invalid[field.id]) {
+        required.push(field);
+        missing.push({ field, focus: byId(`field-${field.id}`), message: `Escribe un número válido en «${field.label}»` });
+        continue;
+      }
       if (field.type !== 'group') {
         if (!field.required) continue;
         required.push(field);
@@ -81,7 +89,9 @@
         if (sub) { focus = card.querySelector(`[data-sub="${sub.id}"]`); break; }
       }
       if (!focus && filled.length < needed) focus = cards.find(card => !filled.includes(card))?.querySelector('[data-sub]') || wrappers[field.id].querySelector('.add-row');
-      if (focus) missing.push({ field, focus });
+      const wrong = [...wrappers[field.id].querySelectorAll('input[data-number]')].find(input => badNumber(input.value));
+      if (wrong) missing.push({ field, focus: wrong, message: `Escribe un número válido en «${field.label}»` });
+      else if (focus) missing.push({ field, focus });
     }
     // En modo lote el listado cuenta como un campo obligatorio más.
     if (inBatch()) {
@@ -135,6 +145,7 @@
     byId('app-title').textContent = output.title;
     byId('app-subtitle').textContent = output.subtitle || 'Rellena los datos y genera el documento';
     renderInto(preview, output);
+    renderNumbers(source);
     const { required, missing } = requirement(data);
     const complete = required.length - missing.length;
     byId('progress-fill').style.width = `${required.length ? Math.round(complete / required.length * 100) : 100}%`;
@@ -193,6 +204,30 @@
   }
 
   let rowCounter = 0;
+  // Valores calculados y marcas de números mal escritos (con los datos que se están viendo).
+  function renderNumbers(source) {
+    const { data: resolved, invalid } = effectiveData(spec, source);
+    for (const field of spec.fields) {
+      if (field.type === 'computed') {
+        const value = resolved[field.id];
+        byId(`field-${field.id}`).textContent = typeof value === 'number' ? formatNumber(value, field.decimals ?? 2, field.unit || '') : '—';
+      }
+      if (field.type === 'number') wrappers[field.id].classList.toggle('invalid', Boolean(invalid[field.id]));
+    }
+    for (const input of form.querySelectorAll('input[data-number]')) input.classList.toggle('invalid', badNumber(input.value));
+  }
+
+  function numberInput(input, unit) {
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.autocomplete = 'off';
+    input.dataset.number = 'true';
+    if (!unit) return input;
+    const box = element('div', 'number-box');
+    box.append(input, element('span', 'unit', unit));
+    return box;
+  }
+
   function addRow(field, values = {}) {
     const rows = wrappers[field.id].querySelector('.group-rows');
     const card = element('div', 'group-row');
@@ -210,11 +245,12 @@
         empty.value = '';
         input.append(empty);
         for (const option of sub.options) { const item = element('option', '', option); item.value = option; input.append(item); }
-      } else { input = element('input'); input.type = sub.type; }
+      } else { input = element('input'); input.type = sub.type === 'number' ? 'text' : sub.type; }
       input.id = id;
       input.dataset.sub = sub.id;
       input.value = values[sub.id] || '';
-      card.append(label, input);
+      const control = sub.type === 'number' ? numberInput(input, sub.unit) : input;
+      card.append(label, control);
       if (sub.help) card.append(element('p', 'help', sub.help));
     }
     const remove = element('button', 'secondary remove-row', 'Quitar');
@@ -256,6 +292,12 @@
       for (let k = initial.length; k < (field.min_rows || 0); k++) addRow(field);
       syncRows(field);
       continue;
+    } else if (field.type === 'computed') {
+      wrapper.classList.add('computed');
+      wrapper.append(element('span', 'computed-label', field.label));
+      const output = element('output', 'computed-value', '—');
+      output.id = `field-${field.id}`;
+      wrapper.append(output);
     } else if (field.type === 'checkbox') {
       const input = element('input');
       input.type = 'checkbox';
@@ -296,13 +338,14 @@
           input.append(item);
         }
       } else input = element('input');
-      if (field.type !== 'select' && field.type !== 'textarea') input.type = field.type;
+      if (field.type !== 'select' && field.type !== 'textarea') input.type = field.type === 'number' ? 'text' : field.type;
       input.id = `field-${field.id}`;
       input.name = field.id;
       input.required = Boolean(field.required);
       input.value = field.value || '';
       if (field.type === 'textarea') input.rows = 4;
-      wrapper.append(label, input);
+      wrapper.append(label, field.type === 'number' ? numberInput(input, field.unit) : input);
+      if (field.type === 'number') wrapper.append(element('p', 'number-error', 'Escribe un número válido'));
     }
     if (field.help) wrapper.append(element('p', 'help', field.help));
     form.append(wrapper);

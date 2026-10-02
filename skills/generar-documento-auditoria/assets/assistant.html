@@ -56,6 +56,15 @@
     .recipient-nav { display:flex; gap:8px; align-items:center; }
     .recipient-nav button { border:1px solid var(--sea); border-radius:9px; padding:6px 10px; color:var(--sea-dark); background:#fff; font-weight:700; }
     .recipient-nav button:disabled { opacity:.45; cursor:not-allowed; }
+    .number-box { display:flex; align-items:center; gap:8px; }
+    .number-box input { flex:1; }
+    .number-box .unit { color:var(--muted); font-weight:700; white-space:nowrap; }
+    .field .number-error { display:none; margin:5px 0 0; color:var(--sea-dark); font-size:12px; font-weight:700; }
+    .field.invalid .number-error { display:block; }
+    .field.invalid input[data-number], input[data-number].invalid { border-color:var(--sea); background:#fff5f7; }
+    .field.computed { display:flex; justify-content:space-between; gap:12px; align-items:baseline; padding:10px 12px; border-radius:9px; background:#f6f5f3; }
+    .computed-label { font-weight:700; }
+    .computed-value { font-weight:800; color:var(--sea-dark); font-variant-numeric:tabular-nums; white-space:nowrap; }
     .field .help { margin:5px 0 0; color:var(--muted); font-size:12px; }
     .summary { border-radius:12px; padding:15px; background:#fbedf0; color:#672033; margin:18px 0; }
     .summary.warn { background:var(--warn-bg); color:var(--warn); }
@@ -112,6 +121,7 @@
   <script>
     /*__SPEC__*/
     /*__EVALUATOR__*/
+    /*__NUMBERS__*/
     /*__DOCX__*/
     /*__TABULAR__*/
     /*__RUNTIME__*/

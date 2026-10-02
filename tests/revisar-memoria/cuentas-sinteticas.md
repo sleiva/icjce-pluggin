@@ -2,7 +2,7 @@
 
 > **Datos inventados** para probar la habilidad `revisar-memoria-cuentas`. No corresponden a ninguna entidad real.
 
-Ejercicio terminado el 31 de diciembre de 2025 (comparativo 2024). Sociedad de responsabilidad limitada, actividad de mecanizado de piezas metálicas. No pertenece a ningún grupo obligado a consolidar, no cotiza y su moneda funcional es el euro. La sociedad declara aplicar el Plan General de Contabilidad de Pequeñas y Medianas Empresas.
+Ejercicio terminado el 31 de diciembre de 2025 (comparativo 2024). Sociedad de responsabilidad limitada, actividad de mecanizado de piezas metálicas. Forma parte de un grupo cuya sociedad dominante está dispensada de consolidar por razón de tamaño y no formula cuentas consolidadas; no cotiza y su moneda funcional es el euro. La sociedad declara aplicar el Plan General de Contabilidad de Pequeñas y Medianas Empresas.
 
 ## Datos generales
 

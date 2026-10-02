@@ -14,10 +14,14 @@ Prueba de comportamiento de `revisar-memoria-cuentas` sobre `cuentas-sinteticas.
 
 ## Requisitos de forma
 
-- Determina el marco (**PGC PYMES**) y lo justifica con las cifras de umbral de los dos ejercicios y la ausencia de exclusiones (no cotiza, no consolida, euro), indicando que los umbrales vigentes se comprueban en la norma (TRLSC / RD 1515/2007) y no de memoria.
+- Determina el marco (**PGC PYMES**) y lo justifica con las cifras de umbral de los dos ejercicios y la ausencia de exclusiones (no cotiza, el grupo no formula ni debe formular cuentas consolidadas, euro), indicando que los umbrales vigentes se comprueban en la norma (TRLSC / RD 1515/2007) y no de memoria.
 - Cada requisito tiene una **fuente** (enlace del MCP, URL oficial del BOE/ICAC o, si no la ha podido contrastar, una marca explícita de que procede del conocimiento del modelo).
 - Usa solo los estados **Omisión, Incompleto, No aplica, A verificar**.
 - Incluye la tabla de cruces con los estados.
 - Termina con la lista de puntos a revisar por el auditor y el **aviso** de que no sustituye el juicio profesional ni es una opinión de auditoría.
 - No emite opinión de auditoría ni juzga la importancia relativa.
 - Si no tiene el MCP del ICJCE, lo dice expresamente.
+
+## Otras detecciones legítimas
+
+Las cuentas tienen otras carencias no sembradas que un buen revisor puede señalar; no cuentan como falsos positivos ni como fallo de la prueba: número medio de personas empleadas sin desglose por categorías (y por sexo, si el modelo del marco lo exige), retribuciones y anticipos a los administradores, desglose del importe neto de la cifra de negocios e información sobre medio ambiente.

@@ -175,10 +175,15 @@ Referencias: [Hermes Desktop](https://hermes-agent.nousresearch.com/docs/user-gu
    fuentes oficiales web verificadas, sin fingir una consulta al MCP.
 5. Pide preparar una carta o informe a partir de un modelo. Comprueba que se entrega un
    HTML con formulario, botón **Generar documento**, vista del texto y exportación.
+6. Pide revisar la memoria de unas cuentas anuales (por ejemplo, las cuentas inventadas de
+   [`tests/revisar-memoria/cuentas-sinteticas.md`](tests/revisar-memoria/cuentas-sinteticas.md)).
+   Comprueba que determina el marco, consulta `indice_norma` antes de `leer_articulo` y
+   entrega el informe con estados, fuentes, cruces y aviso final. El procedimiento completo
+   está en [`tests/revisar-memoria/README.md`](tests/revisar-memoria/README.md).
 
 La validación estática no prueba las respuestas normativas. El 01-10-2026 se comprobó que
 el endpoint público devuelve metadatos OAuth, exige autenticación con `401` y publica 9
-herramientas. La conexión y la generación documental deben probarse en cada cliente.
+herramientas. La conexión, la generación documental y la revisión de la memoria deben probarse en cada cliente.
 
 ## Mantenimiento y ZIP
 
@@ -218,3 +223,41 @@ node skills/generar-documento-auditoria/bin/generar-documento.mjs render skills/
 
 El diseño del asistente usa el logo proporcionado por el ICJCE y su paleta negra y roja.
 Los documentos exportados quedan sin logo institucional y requieren revisión del auditor.
+
+## Revisión de la memoria
+
+La habilidad `revisar-memoria-cuentas` ayuda al auditor a revisar la memoria de unas cuentas
+anuales frente al modelo de memoria del marco que les aplica. No tiene código: son
+instrucciones y tres referencias que el modelo del cliente combina con su conocimiento, la
+búsqueda web y el MCP del ICJCE, cuyo texto oficial y vigente prevalece cuando cubre la norma.
+
+- **Entrada:** las cuentas anuales (balance, cuenta de pérdidas y ganancias y memoria) en PDF,
+  DOCX o texto pegado en la conversación. Basta pedir, por ejemplo, «revisa la memoria de
+  estas cuentas».
+- **Marcos:** PGC con memoria normal o abreviada, PGC PYMES, NOFCAC para consolidadas y
+  adaptaciones sectoriales (entidades sin fines lucrativos, cooperativas, sociedades
+  anónimas deportivas…). Los umbrales se comprueban en el texto vigente del TRLSC y del
+  RD 1515/2007, nunca de memoria.
+- **Proceso:** lee las cuentas, determina el marco, obtiene el modelo de memoria con
+  `indice_norma` (y `leer_articulo` para el literal), contrasta nota a nota y cruza cifras
+  con los estados (cuadros de movimientos, amortización, aplicación del resultado, impuesto,
+  partes vinculadas…).
+- **Salida, en el chat:** encabezado con el marco y las fuentes consultadas, resumen, tabla
+  por nota con estado (**Omisión**, **Incompleto**, **No aplica** o **A verificar**) y fuente
+  de cada requisito, tabla de cruces, puntos a revisar por el auditor y aviso final. Se puede
+  exportar a Word si el cliente tiene una habilidad para ello.
+- **Límites:** no emite opinión de auditoría ni juzga la importancia relativa o la
+  suficiencia de la información; no revisa políticas contables, informe de gestión ni EINF.
+  Sin MCP, lo indica y marca los requisitos no contrastados con su texto.
+- **Fuentes:** solo oficiales (BOE, ICAC, ICJCE).
+- **Confidencialidad:** las cuentas del cliente se procesan solo en la conversación; la
+  habilidad no las publica ni las sube a otros servicios. Revisa la política de datos del
+  cliente de IA antes de aportar cuentas reales.
+
+Las referencias están en
+[`skills/revisar-memoria-cuentas/references/`](skills/revisar-memoria-cuentas/references/):
+`marcos-y-umbrales.md` (elección del marco y localización del modelo en el MCP),
+`cruces-basicos.md` (partidas que obligan a informar y cifras que deben coincidir) y
+`formato-informe.md` (estructura del informe). La prueba de comportamiento y su
+procedimiento manual están en [`tests/revisar-memoria/`](tests/revisar-memoria/README.md).
+

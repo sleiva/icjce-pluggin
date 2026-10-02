@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import '../../skills/generar-documento-auditoria/assets/numbers.js';
 import '../../skills/generar-documento-auditoria/assets/evaluator.js';
 import '../../skills/generar-documento-auditoria/assets/docx.js';
 import '../../skills/generar-documento-auditoria/assets/tabular.js';
@@ -112,9 +113,9 @@ test('mapRows: errores por fila, select, fechas, números de Excel y when por fi
     ['Banco Tres', 'Calle 3', 'Sres.', '7', '', '', '31/02/2026'],
   ];
   const [uno, dos, tres] = mapRows(dated, table).rows;
-  assert.deepEqual(uno.values, { destinatario: 'Banco Uno', direccion: 'Calle 1', tratamiento: 'Sr.', saldo: '1.234,50', moneda: 'EUR', divisa: '', vencimiento: '2026-12-31' });
+  assert.deepEqual(uno.values, { destinatario: 'Banco Uno', direccion: 'Calle 1', tratamiento: 'Sr.', saldo: '1234,5', moneda: 'EUR', divisa: '', vencimiento: '2026-12-31' });
   assert.deepEqual(uno.errors, []);
-  assert.equal(dos.values.saldo, '1.000');
+  assert.equal(dos.values.saldo, '1000');
   assert.equal(dos.values.vencimiento, '2025-12-31');
   assert.deepEqual(dos.errors, ['Fila 3: "Doña" no es una opción de Tratamiento', 'Fila 3: falta Dirección', 'Fila 3: falta Divisa']);
   assert.deepEqual(tres.errors, ['Fila 4: "31/02/2026" no es una fecha válida para Vencimiento']);
@@ -172,4 +173,27 @@ test('decodeText lee UTF-16 con BOM (Texto Unicode de Excel)', () => {
   const be = new Uint8Array([0xfe, 0xff, ...[...'Peña\tx'].flatMap(c => [c.charCodeAt(0) >> 8, c.charCodeAt(0) & 255])]);
   assert.equal(decodeText(le), 'Peña\tx');
   assert.equal(decodeText(be), 'Peña\tx');
+});
+
+test('mapRows: un campo number acepta formato español y números de Excel; los de texto conservan los dígitos', () => {
+  const numeric = structuredClone(spec);
+  numeric.fields.find(f => f.id === 'saldo').type = 'number';
+  numeric.fields.push({ id: 'codigo_postal', label: 'Código postal', type: 'text' });
+  numeric.batch.fields.push('codigo_postal');
+  const table = [
+    ['Destinatario', 'Dirección', 'Tratamiento', 'Saldo', 'Código postal'],
+    ['Uno', 'C/ 1', 'Sr.', { number: '1.234' }, { number: '28001' }],
+    ['Dos', 'C/ 2', 'Sr.', '2.500,75', '08001'],
+    ['Tres', 'C/ 3', 'Sr.', 'mucho', ''],
+  ];
+  const [uno, dos, tres] = mapRows(numeric, table).rows;
+  assert.equal(uno.values.saldo, '1,234');
+  assert.equal(uno.values.codigo_postal, '28001');
+  assert.deepEqual(uno.errors, []);
+  assert.equal(dos.values.saldo, '2.500,75');
+  assert.equal(dos.values.codigo_postal, '08001');
+  assert.deepEqual(tres.errors, ['Fila 4: "mucho" no es un número válido para Saldo']);
+  const { buildModel } = globalThis.DocEvaluator;
+  const letter = buildModel(numeric, { ...uno.values, entidad: 'E', fecha_cierre: '2026-12-31', auditor: 'A', direccion_respuesta: 'R' });
+  assert.ok(letter.sections[1].paragraphs.includes('Texto de prueba: según nuestros registros, el saldo a esa fecha es de 1,23.'));
 });

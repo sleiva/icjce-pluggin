@@ -1,6 +1,7 @@
 /* Lectura del listado de un lote: celdas pegadas desde Excel, CSV (UTF-8 o Windows-1252) y
    .xlsx (primera hoja), y emparejamiento con los campos `batch` de la plantilla. Sin
-   dependencias; se incrusta en el HTML y lo prueban en Node. Usa DocEvaluator (evaluator.js). */
+   dependencias; se incrusta en el HTML y lo prueban en Node. Usa DocEvaluator (evaluator.js)
+   y DocNumbers (numbers.js). */
 (function (root) {
   'use strict';
   const LIMITS = { fileBytes: 5 * 1024 * 1024, unzippedBytes: 20 * 1024 * 1024, rows: 500, columns: 50 };
@@ -203,13 +204,6 @@
     return date.toISOString().slice(0, 10);
   }
 
-  function spanishNumber(text) {
-    const value = Math.round(Number(text) * 100) / 100;
-    if (!Number.isFinite(value)) return text;
-    const decimals = Number.isInteger(value) ? 0 : 2;
-    return value.toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: 'always' });
-  }
-
   function mapRows(spec, table, common = {}) {
     const fields = spec.batch.fields.map(id => spec.fields.find(field => field.id === id));
     const [headers = [], ...data] = table;
@@ -246,7 +240,11 @@
           const date = toDate(cell);
           if (date) values[field.id] = date;
           else { values[field.id] = text; rowErrors.push(`Fila ${line}: "${text}" no es una fecha válida para ${field.label}`); }
-        } else values[field.id] = typeof cell === 'object' ? spanishNumber(cell.number) : text;
+        } else if (field.type === 'number') {
+          // Un número de Excel se guarda sin ambigüedad («1,234» es 1,234 y no 1.234).
+          values[field.id] = typeof cell === 'object' ? root.DocNumbers.plainNumber(cell.number) : text;
+          if (Number.isNaN(root.DocNumbers.parseNumber(values[field.id]))) rowErrors.push(`Fila ${line}: "${text}" no es un número válido para ${field.label}`);
+        } else values[field.id] = typeof cell === 'object' ? root.DocNumbers.plainNumber(cell.number) : text;
       }
       const { visible } = root.DocEvaluator.effectiveData(spec, { ...common, ...values });
       for (const field of fields) {

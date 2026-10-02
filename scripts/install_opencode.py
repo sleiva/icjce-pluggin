@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MCP = json.loads((ROOT / "opencode.json").read_text(encoding="utf-8"))["mcp"]["icjce"]
-SKILLS = ("consultar-icjce-mcp", "generar-documento-auditoria")
+SKILLS = ("consultar-icjce-mcp", "generar-documento-auditoria", "revisar-memoria-cuentas")
 LEGACY_CLIENT_ID = "tpc_usH5S5S2xpb88ociR6yE63"
 
 

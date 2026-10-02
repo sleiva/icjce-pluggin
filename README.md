@@ -1,9 +1,10 @@
 # ICJCE Auditoría — ChatGPT, Claude, OpenCode y Hermes Desktop
 
-El repositorio contiene dos habilidades compartidas por los cuatro clientes:
+El repositorio contiene tres habilidades compartidas por los cuatro clientes:
 
 - `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Combina el análisis del modelo, los textos del MCP del ICJCE y la búsqueda web de fuentes oficiales cuando está disponible. Conserva cinco referencias temáticas.
 - `generar-documento-auditoria` localiza primero un modelo con `buscar_modelos_informe`, lee el texto con `leer_documento` y extrae los datos que debe aportar el auditor. A partir de ese análisis prepara un asistente HTML autónomo por conversación. Muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
+- `revisar-memoria-cuentas` revisa la memoria de unas cuentas anuales frente al modelo de su marco (PGC normal o abreviado, PGC PYMES, NOFCAC o adaptación sectorial). Determina el marco con los umbrales vigentes, contrasta nota a nota con el índice y el texto oficial del MCP, cruza cifras con el balance y la cuenta de pérdidas y ganancias y devuelve en el chat un informe de omisiones con la fuente de cada requisito. No emite opinión de auditoría.
 
 Los clientes quedan configurados para autenticarse con OAuth mediante Auth0. El servidor
 MCP también acepta una API key para otras integraciones, pero este plugin no la solicita ni
@@ -89,7 +90,7 @@ opencode mcp auth icjce
 opencode mcp list
 ```
 
-El instalador copia las dos habilidades completas a `~/.config/opencode/skills/` y añade
+El instalador copia las tres habilidades completas a `~/.config/opencode/skills/` y añade
 solo la entrada `mcp.icjce` al `opencode.json` o `opencode.jsonc` existente. Conserva los
 otros proveedores, servidores y comentarios; crea una copia de seguridad antes de modificar
 la configuración. Reinicia OpenCode tras instalar. El acceso OAuth se completa en el
@@ -135,12 +136,13 @@ variable; comprueba en Auth0 que el redirect URI real sea aceptado. No declares
 ## Hermes Agent Desktop
 
 Hermes Desktop comparte habilidades y MCP con la instalación de Hermes Agent. El repositorio
-ya tiene el layout de un **tap** (`skills/<nombre>/SKILL.md`). Instala ambas habilidades:
+ya tiene el layout de un **tap** (`skills/<nombre>/SKILL.md`). Instala las tres habilidades:
 
 ```sh
 hermes skills tap add sleiva/icjce-pluggin
 hermes skills install sleiva/icjce-pluggin/skills/consultar-icjce-mcp
 hermes skills install sleiva/icjce-pluggin/skills/generar-documento-auditoria
+hermes skills install sleiva/icjce-pluggin/skills/revisar-memoria-cuentas
 ```
 
 En Hermes Desktop, añade un servidor MCP HTTP con el nombre `icjce`, la URL indicada arriba
@@ -182,7 +184,7 @@ herramientas. La conexión y la generación documental deben probarse en cada cl
 
 `skills/` es la copia canónica consumida por los clientes. El backend de NappAI es el origen
 histórico de las referencias temáticas; `scripts/sincroniza.sh /ruta/al/backend` importa
-solo esas referencias y conserva ambas habilidades adaptadas al plugin. Revisa el diff
+solo esas referencias y conserva las tres habilidades adaptadas al plugin. Revisa el diff
 antes de publicar. No ejecutes la sincronización como parte del empaquetado.
 
 Mantén iguales los metadatos y la versión en `plugin.json`, `.codex-plugin/plugin.json` y

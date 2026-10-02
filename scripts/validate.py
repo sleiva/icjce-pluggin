@@ -52,7 +52,7 @@ def validate():
     assert market['plugins'][0]['name'] == portable['name']
     assert market['plugins'][0]['source'] == './'
     skills = sorted((ROOT / 'skills').glob('*/SKILL.md'))
-    assert {path.parent.name for path in skills} == {'consultar-icjce-mcp', 'generar-documento-auditoria'}
+    assert {path.parent.name for path in skills} == {'consultar-icjce-mcp', 'generar-documento-auditoria', 'revisar-memoria-cuentas'}
     for path in skills:
         text = path.read_text()
         front = yaml.safe_load(text.split('---', 2)[1])
@@ -72,7 +72,7 @@ def validate():
     tests = sorted(str(path) for path in (ROOT / 'tests/generar-documento').glob('*.test.mjs'))
     assert tests, 'Faltan las pruebas del renderizador'
     subprocess.run(['node', '--test', *tests], cwd=ROOT, check=True)
-    print('OK: plugin schemas; OpenCode and Hermes MCP; metadata, marketplace, both skills, renderer assets and tests')
+    print('OK: plugin schemas; OpenCode and Hermes MCP; metadata, marketplace, all three skills, renderer assets and tests')
 
 if __name__ == '__main__':
     validate()

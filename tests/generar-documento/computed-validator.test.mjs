@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { validate, lint } from '../../skills/generar-documento-auditoria/bin/validar-plantilla.mjs';
 
 const fixture = JSON.parse(await readFile(new URL('./fixtures/materialidad.v2.json', import.meta.url), 'utf8'));
+const batchFixture = JSON.parse(await readFile(new URL('./fixtures/confirmacion-saldos.v2.json', import.meta.url), 'utf8'));
 const variant = edit => { const spec = structuredClone(fixture); edit(spec); return spec; };
 const field = (spec, id) => spec.fields.find(item => item.id === id);
 const index = id => fixture.fields.findIndex(item => item.id === id);
@@ -85,4 +86,33 @@ test('avisos: número sin uso, división por un campo que puede quedar vacío', 
   assert.ok(!lint(validate(literal)).some(w => /divide por/.test(w)));
   const onlySum = variant(s => { s.sections[1].paragraphs = ['Total {{total_incorrecciones}}.']; });
   assert.ok(!lint(validate(onlySum)).some(w => /incorrecciones: el grupo no se usa/.test(w)));
+});
+
+test('computed: decimals, unit y anidamiento fuera de rango', () => {
+  assert.throws(() => validate(variant(s => { field(s, 'materialidad').decimals = 7; })), /decimals debe ser un entero entre 0 y 6/);
+  assert.throws(() => validate(variant(s => { field(s, 'materialidad').unit = ''; })), /unit debe ser un texto de 1 a 30 caracteres/);
+  assert.throws(() => validate(variant(s => { field(s, 'materialidad').expr = `${'('.repeat(11)}base${')'.repeat(11)}`; })), /expr: demasiados niveles de anidamiento/);
+});
+
+test('aviso al dividir por sum(...) o por 0', () => {
+  const sum = lint(variant(s => { field(s, 'materialidad').expr = 'base / sum(incorrecciones.importe)'; }));
+  assert.ok(sum.some(w => /divide por sum\(\.\.\.\), que puede valer 0/.test(w)), sum.join('\n'));
+  const zero = lint(variant(s => { field(s, 'materialidad').expr = 'base / 0'; }));
+  assert.ok(zero.some(w => /expr: divide por 0/.test(w)), zero.join('\n'));
+});
+
+test('lote: un campo común no puede depender del listado a través de un computed', () => {
+  const batchSpec = edit => {
+    const spec = JSON.parse(JSON.stringify(batchFixture));
+    spec.fields.find(f => f.id === 'saldo').type = 'number';
+    const at = spec.fields.findIndex(f => f.id === 'saldo') + 1;
+    spec.fields.splice(at, 0, { id: 'saldo_iva', label: 'Saldo con IVA', type: 'computed', expr: 'saldo * 1.21' });
+    spec.fields.push({ id: 'nota', label: 'Nota', type: 'text', required: true, when: { field: 'saldo_iva', gt: 1000 } });
+    spec.sections[1].paragraphs.push('Texto de prueba: {{nota}}.');
+    edit?.(spec);
+    return spec;
+  };
+  assert.throws(() => validate(batchSpec()), /fields\[\d+\]\.when: depende de saldo, que viene del listado; añádelo a batch\.fields/);
+  assert.throws(() => validate(batchSpec(s => { s.fields.find(f => f.id === 'saldo_iva').when = { field: 'saldo', gt: 5 }; s.fields.find(f => f.id === 'nota').when = undefined; })),
+    /los campos calculados no pueden depender del listado en su when/);
 });

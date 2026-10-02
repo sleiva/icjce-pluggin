@@ -79,3 +79,21 @@ test('run: dato vacío, división por cero y sum', () => {
   assert.equal(run(compile('sum(g.x)').ast, {}, { g: [] }), 0);
   assert.equal(run(compile('sum(g.x)').ast, {}, { g: [{ x: 'abc' }] }), null);
 });
+
+test('las funciones no se buscan en la cadena de prototipos', () => {
+  for (const name of ['constructor', 'tostring', 'hasownproperty']) assert.throws(() => compile(`${name}(1)`), new RegExp(`función desconocida ${name}`));
+  assert.equal(run(compile('sum(constructor.x)').ast, {}, {}), 0);
+  assert.equal(run(compile('constructor').ast, {}, {}), null);
+});
+
+test('los espacios sobrantes se ignoran', () => {
+  assert.deepEqual(compile('materialidad ').refs, ['materialidad']);
+  assert.deepEqual(compile(' a + b ').refs, ['a', 'b']);
+  assert.deepEqual(compile('a +\n b\t').refs, ['a', 'b']);
+});
+
+test('parseNumber: un punto tras un cero inicial es decimal', () => {
+  assert.equal(parseNumber('0.500'), 0.5);
+  assert.equal(parseNumber('0.123'), 0.123);
+  assert.equal(parseNumber('1.234'), 1234);
+});

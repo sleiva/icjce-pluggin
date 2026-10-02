@@ -334,9 +334,15 @@ function checkBatch(batch, ctx) {
   // Un campo común a todas las cartas no puede depender de un valor que cambia por destinatario.
   ctx.spec.fields.forEach((field, i) => {
     if (batch.fields.includes(field.id) || field.when === undefined) return;
-    for (const id of fieldsOf(field.when, ctx.spec)) {
-      if (batch.fields.includes(id)) fail(`fields[${i}].when: depende de ${id}, que viene del listado; añádelo a batch.fields`);
+    const seen = fieldsOf(field.when, ctx.spec);
+    const queue = [...seen];
+    for (let k = 0; k < queue.length; k++) {
+      const other = ctx.spec.fields.find(item => item.id === queue[k]);
+      if (!other || other.type !== 'computed') continue;
+      for (const id of dependencies(other, ctx.spec)) if (!seen.has(id)) { seen.add(id); queue.push(id); }
     }
+    const reached = ctx.spec.fields.find(item => seen.has(item.id) && batch.fields.includes(item.id));
+    if (reached) fail(`fields[${i}].when: depende de ${reached.id}, que viene del listado; ${field.type === 'computed' ? 'los campos calculados no pueden depender del listado en su when' : 'añádelo a batch.fields'}`);
   });
 }
 
@@ -633,6 +639,19 @@ function divisors(node, out = new Set()) {
   return out;
 }
 
+function divisorNodes(node, out = []) {
+  if (!node || typeof node !== 'object') return out;
+  if (node.type === 'op' && node.op === '/') out.push(node.right);
+  for (const child of [node.left, node.right, node.value, ...(node.args || [])]) divisorNodes(child, out);
+  return out;
+}
+
+function hasSum(node) {
+  if (!node || typeof node !== 'object') return false;
+  if (node.type === 'call' && node.name === 'sum') return true;
+  return [node.left, node.right, node.value, ...(node.args || [])].some(hasSum);
+}
+
 function collectRefs(node, out) {
   if (!node || typeof node !== 'object') return;
   if (node.type === 'ref') out.add(node.id);
@@ -655,6 +674,10 @@ export function lint(spec) {
     const { ast, refs, sums } = compile(field.expr);
     refs.forEach(id => conditioned.add(id));
     sums.forEach(({ group, sub }) => { summed.add(group); summed.add(sub); });
+    for (const divisor of divisorNodes(ast)) {
+      if (divisor.type === 'num' && divisor.value === 0) warnings.push(`fields[${i}].expr: divide por 0`);
+      else if (hasSum(divisor)) warnings.push(`fields[${i}].expr: divide por sum(...), que puede valer 0`);
+    }
     for (const id of divisors(ast)) {
       const other = spec.fields.find(item => item.id === id);
       if (other && (other.type === 'computed' || !other.required || other.when)) warnings.push(`fields[${i}].expr: divide por ${id}, que puede quedar vacío`);

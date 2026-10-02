@@ -65,3 +65,15 @@ test('un computed oculto por when no tiene valor', () => {
 test('renderText formatea números', () => {
   assert.equal(renderText(spec, base, 'Materialidad {{materialidad}}'), 'Materialidad 30.000,00\u00a0€');
 });
+
+test('las comparaciones toleran el ruido de coma flotante', () => {
+  const data = { entidad: 'P', base: '1', porcentaje: '30', incorrecciones: [{ concepto: 'a', importe: '0,1' }, { concepto: 'b', importe: '0,2' }] };
+  const { data: resolved } = effectiveData(spec, data);
+  assert.notEqual(resolved.total_incorrecciones, resolved.materialidad);
+  assert.deepEqual(section(buildModel(spec, data), 'Conclusión').paragraphs, ['Texto de prueba: las incorrecciones no superan la materialidad.']);
+  assert.equal(evaluate({ field: 'total_incorrecciones', eq: 'materialidad' }, resolved, spec), true);
+  assert.equal(evaluate({ field: 'total_incorrecciones', gt: 'materialidad' }, resolved, spec), false);
+  assert.equal(evaluate({ field: 'total_incorrecciones', gte: 'materialidad' }, resolved, spec), true);
+  assert.equal(evaluate({ field: 'total_incorrecciones', lt: 'materialidad' }, resolved, spec), false);
+  assert.equal(evaluate({ field: 'total_incorrecciones', lte: 'materialidad' }, resolved, spec), true);
+});

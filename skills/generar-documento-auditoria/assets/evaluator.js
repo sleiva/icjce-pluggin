@@ -73,11 +73,12 @@
       const other = typeof target === 'number' ? null : spec.fields.find(item => item.id === target);
       const right = typeof target === 'number' ? target : (other ? numberOf(other, data[target]) : null);
       if (left === null || right === null) return false;
-      if (op === 'gt') return left > right;
-      if (op === 'gte') return left >= right;
-      if (op === 'lt') return left < right;
-      if (op === 'lte') return left <= right;
-      return left === right;
+      const equal = Math.abs(left - right) <= 1e-9 * Math.max(1, Math.abs(left), Math.abs(right));
+      if (op === 'eq') return equal;
+      if (op === 'gt') return left > right && !equal;
+      if (op === 'gte') return left > right || equal;
+      if (op === 'lt') return left < right && !equal;
+      return left < right || equal;
     }
     throw new Error('Condición no reconocida');
   }

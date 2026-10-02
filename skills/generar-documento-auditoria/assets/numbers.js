@@ -40,7 +40,7 @@
       normalized = `${intPart}.${frac}`;
     } else if (dots) {
       const parts = text.split('.');
-      if (groupsOk(text, '.')) normalized = parts.join('');
+      if (parts[0] !== '0' && groupsOk(text, '.')) normalized = parts.join('');
       else if (dots === 1 && parts[0] && parts[1]) normalized = text;
       else return NaN;
     } else normalized = text;
@@ -77,7 +77,7 @@
 
   function tokenize(expr) {
     const tokens = [];
-    const pattern = /\s*(?:(\d+(?:\.\d+)?)|([a-z][a-z0-9_]*)|(.))/gy;
+    const pattern = /\s*(?:(\d+(?:\.\d+)?)|([a-z][a-z0-9_]*)|(\S))/gy;
     let match;
     while (pattern.lastIndex < expr.length && (match = pattern.exec(expr))) {
       const position = match.index + match[0].length - (match[1] || match[2] || match[3] || '').length + 1;
@@ -137,7 +137,7 @@
       throw new Error(`no se esperaba "${token.type}" en la posición ${token.position}`);
     }
     function call(name) {
-      const arity = FUNCTIONS[name.value];
+      const arity = Object.prototype.hasOwnProperty.call(FUNCTIONS, name.value) ? FUNCTIONS[name.value] : null;
       if (!arity) throw new Error(`función desconocida ${name.value} en la posición ${name.position}`);
       const open = take('(');
       nest(open);
@@ -174,7 +174,7 @@
   function run(node, values, groups) {
     switch (node.type) {
       case 'num': return node.value;
-      case 'ref': { const v = values[node.id]; return typeof v === 'number' && Number.isFinite(v) ? v : null; }
+      case 'ref': { const v = Object.prototype.hasOwnProperty.call(values, node.id) ? values[node.id] : null; return typeof v === 'number' && Number.isFinite(v) ? v : null; }
       case 'neg': { const v = run(node.value, values, groups); return v === null ? null : -v; }
       case 'op': {
         const a = run(node.left, values, groups);
@@ -189,7 +189,8 @@
         if (node.name === 'sum') {
           const { group, sub } = node.args[0];
           let total = 0;
-          for (const row of groups[group] || []) {
+          const rows = Object.prototype.hasOwnProperty.call(groups, group) ? groups[group] : [];
+          for (const row of Array.isArray(rows) ? rows : []) {
             const v = parseNumber(row[sub]);
             if (v === null) continue;
             if (Number.isNaN(v)) return null;

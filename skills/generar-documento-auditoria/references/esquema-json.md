@@ -124,12 +124,12 @@ Usa `number` solo para importes, porcentajes y cantidades; los códigos postales
 { "id": "total_incorrecciones", "label": "Total", "type": "computed", "expr": "sum(incorrecciones.importe)", "unit": "€" }
 ```
 
-- `number`: `decimals` (0 a 6, por defecto 2) y `unit` (texto de hasta 30 caracteres, opcional). El auditor puede escribir «1.234,56», «1234,56» o «1234.56»; «1.234» se lee como mil doscientos treinta y cuatro. Un valor no numérico se marca y bloquea la generación. Su `value` inicial, si se indica, debe ser un número escrito de forma válida. Se admite también como subcampo de un `group` y como campo de `batch.fields`.
+- `number`: `decimals` (0 a 6, por defecto 2) y `unit` (texto de hasta 30 caracteres, opcional). El auditor puede escribir «1.234,56», «1234,56» o «1234.56»; «1.234» se lee como mil doscientos treinta y cuatro, pero «0.500» se lee como 0,5. Un valor no numérico se marca y bloquea la generación. Su `value` inicial, si se indica, debe ser un número escrito de forma válida. Se admite también como subcampo de un `group` y como campo de `batch.fields`.
 - `computed`: `expr` obligatoria (hasta 500 caracteres y 10 niveles de paréntesis), `decimals`, `unit`, `help` y `when`. La fórmula admite números (con punto decimal), campos `number` o `computed` **declarados antes**, `+ - * /`, paréntesis, `sum(grupo.subcampo)` (subcampo `number`; suma las filas con contenido; 0 sin filas), `min(a, b, …)`, `max(a, b, …)`, `round(x, n)` (n fijo de 0 a 6) y `abs(x)`. Sin `eval`: cualquier otra cosa es un error con su posición.
 - Los porcentajes se escriben como se leen (5 es un 5 %): divide por 100 en la fórmula.
 - Si falta un dato, hay un número no válido o una división por cero, el cálculo queda sin valor: `[Etiqueta]` en la vista previa y vacío en el documento. Se calcula con precisión completa y se redondea al mostrarlo (medio hacia arriba); usa `round` para redondear un paso intermedio.
 - En el documento: «1.234,56 €» (separador de miles, coma decimal y la unidad tras un espacio duro), también en las celdas de las tablas.
-- Comparaciones en condiciones: `{ "field": "total_incorrecciones", "gt": "materialidad" }` o `{ "field": "honorarios_pct", "gte": 15 }`, con `gt`, `gte`, `lt`, `lte` o `eq` contra un número o contra otro campo numérico. Si un lado no tiene valor, la condición es falsa.
+- Comparaciones en condiciones: `{ "field": "total_incorrecciones", "gt": "materialidad" }` o `{ "field": "honorarios_pct", "gte": 15 }`, con `gt`, `gte`, `lt`, `lte` o `eq` contra un número o contra otro campo numérico. Si un lado no tiene valor, la condición es falsa. Las comparaciones toleran el ruido de coma flotante: dos importes que difieren en menos de una milmillonésima se consideran iguales.
 
 ## Textos derivados (v2)
 

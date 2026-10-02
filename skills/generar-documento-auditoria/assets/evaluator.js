@@ -1,11 +1,31 @@
 /* Evaluador de plantillas del asistente documental: condiciones, visibilidad de campos,
-   textos derivados, grupos repetibles y documento final. Sin dependencias; se incrusta en
-   el HTML y lo importa el validador de Node, de modo que lo comprobado es lo que se ejecuta. */
+   textos derivados, grupos repetibles, números y documento final. Usa DocNumbers
+   (numbers.js) para los campos numéricos; se incrusta en el HTML y lo importa el validador
+   de Node, de modo que lo comprobado es lo que se ejecuta. */
 (function (root) {
   'use strict';
   const PLACEHOLDER = /\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g;
   const own = (object, key) => Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
   const textOf = value => (typeof value === 'string' ? value.trim() : '');
+  const numbers = () => root.DocNumbers;
+  const NUMERIC = ['number', 'computed'];
+  const COMPARE = ['gt', 'gte', 'lt', 'lte', 'eq'];
+  const compiled = new WeakMap();
+
+  // Fórmula compilada de un campo `computed` (se compila una vez por plantilla).
+  function formula(spec, field) {
+    let cache = compiled.get(spec);
+    if (!cache) { cache = new Map(); compiled.set(spec, cache); }
+    if (!cache.has(field.id)) cache.set(field.id, numbers().compile(field.expr));
+    return cache.get(field.id);
+  }
+
+  // Valor numérico de un campo `number` (texto escrito) o `computed` (ya calculado), o null.
+  function numberOf(field, value) {
+    if (field.type === 'computed') return typeof value === 'number' && Number.isFinite(value) ? value : null;
+    const parsed = numbers().parseNumber(value);
+    return typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null;
+  }
 
   function emptyValue(field) {
     if (field.type === 'checkbox') return false;
@@ -23,6 +43,7 @@
     if (field.type === 'checkbox') return value !== true;
     if (field.type === 'multiselect') return !Array.isArray(value) || value.length === 0;
     if (field.type === 'group') return filledRows(field, value).length === 0;
+    if (NUMERIC.includes(field.type)) return numberOf(field, value) === null;
     return typeof value !== 'string' || !value.trim();
   }
 
@@ -45,23 +66,62 @@
     if ('checked' in condition) return (value === true) === condition.checked;
     if ('includes' in condition) return Array.isArray(value) && value.includes(condition.includes);
     if ('filled' in condition) return !isEmpty(field, value) === condition.filled;
+    const op = COMPARE.find(key => key in condition);
+    if (op) {
+      const left = numberOf(field, value);
+      const target = condition[op];
+      const other = typeof target === 'number' ? null : spec.fields.find(item => item.id === target);
+      const right = typeof target === 'number' ? target : (other ? numberOf(other, data[target]) : null);
+      if (left === null || right === null) return false;
+      if (op === 'gt') return left > right;
+      if (op === 'gte') return left >= right;
+      if (op === 'lt') return left < right;
+      if (op === 'lte') return left <= right;
+      return left === right;
+    }
     throw new Error('Condición no reconocida');
   }
 
   // Los campos con `when` solo pueden depender de campos anteriores (lo exige el
   // validador), así que basta una pasada en orden. Un campo oculto vale vacío y un
   // grupo conserva solo sus filas con contenido.
+  // Un `computed` se calcula aquí, en orden, con los valores ya resueltos; `invalid` marca
+  // los `number` escritos de forma no numérica.
   function effectiveData(spec, raw) {
     const source = raw || {};
     const data = {};
     const visible = {};
+    const invalid = {};
+    const values = {};
+    const groups = {};
     for (const field of spec.fields) {
       const shown = !field.when || evaluate(field.when, data, spec);
       visible[field.id] = shown;
+      if (field.type === 'computed') {
+        const { ast } = formula(spec, field);
+        data[field.id] = shown ? numbers().run(ast, values, groups) : null;
+        values[field.id] = data[field.id];
+        continue;
+      }
       const value = shown && source[field.id] !== undefined ? source[field.id] : emptyValue(field);
       data[field.id] = field.type === 'group' ? filledRows(field, value) : value;
+      if (field.type === 'group') groups[field.id] = data[field.id];
+      if (field.type === 'number') {
+        const parsed = numbers().parseNumber(value);
+        invalid[field.id] = Number.isNaN(parsed);
+        values[field.id] = numberOf(field, value);
+      }
     }
-    return { data, visible };
+    return { data, visible, invalid };
+  }
+
+  // Texto de un valor en el documento: los números con su formato; los demás, recortados.
+  function display(field, value) {
+    if (field && NUMERIC.includes(field.type)) {
+      const n = numberOf(field, value);
+      return n === null ? '' : numbers().formatNumber(n, field.decimals ?? 2, field.unit || '');
+    }
+    return textOf(value);
   }
 
   // `row` y `group` permiten usar los subcampos de una fila dentro de un `repeat`.
@@ -69,9 +129,9 @@
     return template.replace(PLACEHOLDER, (_, id) => {
       if (Object.prototype.hasOwnProperty.call(derived, id)) return derived[id];
       const sub = group ? group.fields.find(item => item.id === id) : null;
-      const text = textOf(sub ? row[id] : data[id]);
-      if (text || !markMissing) return text;
       const field = sub || spec.fields.find(item => item.id === id);
+      const text = display(field, sub ? row[id] : data[id]);
+      if (text || !markMissing) return text;
       return `[${field ? field.label : id}]`;
     });
   }
@@ -135,5 +195,5 @@
     return fill(template, data, resolveDerived(spec, data, markMissing), spec, markMissing);
   }
 
-  root.DocEvaluator = { PLACEHOLDER, emptyValue, filledRows, isEmpty, evaluate, effectiveData, buildModel, renderText };
+  root.DocEvaluator = { PLACEHOLDER, emptyValue, filledRows, isEmpty, evaluate, effectiveData, buildModel, renderText, numberOf };
 })(globalThis);

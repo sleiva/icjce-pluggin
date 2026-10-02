@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "title": "Cálculo de materialidad de prueba",
+  "subtitle": "{{entidad}}",
+  "fields": [
+    { "id": "entidad", "label": "Entidad", "type": "text", "required": true },
+    { "id": "base", "label": "Cifra de negocios", "type": "number", "required": true, "unit": "€" },
+    { "id": "porcentaje", "label": "Porcentaje aplicado", "type": "number", "required": true, "decimals": 1, "unit": "%" },
+    { "id": "materialidad", "label": "Materialidad", "type": "computed", "expr": "base * porcentaje / 100", "unit": "€" },
+    { "id": "ejecucion_pct", "label": "Porcentaje de ejecución", "type": "number", "decimals": 0, "unit": "%", "value": "75" },
+    { "id": "ejecucion", "label": "Materialidad de ejecución", "type": "computed", "expr": "materialidad * ejecucion_pct / 100", "unit": "€" },
+    { "id": "umbral", "label": "Umbral de errores claramente triviales", "type": "computed", "expr": "round(materialidad * 0.05, 0)", "decimals": 0, "unit": "€" },
+    { "id": "incorrecciones", "label": "Incorrecciones no corregidas", "type": "group", "fields": [
+      { "id": "concepto", "label": "Concepto", "type": "text", "required": true },
+      { "id": "importe", "label": "Importe", "type": "number", "unit": "€" }
+    ] },
+    { "id": "total_incorrecciones", "label": "Total de incorrecciones", "type": "computed", "expr": "sum(incorrecciones.importe)", "unit": "€" }
+  ],
+  "sections": [
+    { "heading": "Materialidad", "paragraphs": [
+      "Texto de prueba: materialidad de {{materialidad}} ({{porcentaje}} sobre {{base}}).",
+      "Texto de prueba: ejecución {{ejecucion}}; umbral {{umbral}}."
+    ] },
+    { "heading": "Incorrecciones", "when": { "field": "incorrecciones", "filled": true }, "paragraphs": [
+      { "repeat": "incorrecciones", "as": "table" },
+      "Texto de prueba: total {{total_incorrecciones}}."
+    ] },
+    { "heading": "Conclusión", "paragraphs": [
+      { "text": "Texto de prueba: las incorrecciones superan la materialidad.", "when": { "field": "total_incorrecciones", "gt": "materialidad" } },
+      { "text": "Texto de prueba: las incorrecciones no superan la materialidad.", "when": { "all": [ { "field": "incorrecciones", "filled": true }, { "field": "total_incorrecciones", "lte": "materialidad" } ] } },
+      { "text": "Texto de prueba: no hay incorrecciones.", "when": { "not": { "field": "incorrecciones", "filled": true } } }
+    ] }
+  ],
+  "sources": [],
+  "include_sources_in_output": false
+}

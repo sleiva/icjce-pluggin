@@ -1,22 +1,27 @@
 // Validación de plantillas del asistente documental. Los errores detienen la generación;
 // los avisos (`lint`) se muestran y la habilidad debe revisarlos.
+import '../assets/numbers.js';
 import '../assets/evaluator.js';
 
 const { evaluate, effectiveData } = globalThis.DocEvaluator;
+const { parseNumber, compile } = globalThis.DocNumbers;
 const ID = /^[a-z][a-z0-9_]*$/;
 const PLACEHOLDER = /\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g;
 const TYPES_V1 = ['text', 'textarea', 'date', 'select'];
-const TYPES_V2 = [...TYPES_V1, 'checkbox', 'multiselect', 'group'];
-const SUB_TYPES = TYPES_V1;
+const TYPES_V2 = [...TYPES_V1, 'checkbox', 'multiselect', 'group', 'number', 'computed'];
+const NUMERIC = ['number', 'computed'];
+const SUB_TYPES = [...TYPES_V1, 'number'];
 const REPEAT_AS = ['table', 'list', 'blocks'];
-const LEAF_OPS = ['equals', 'in', 'checked', 'includes', 'filled'];
+const COMPARE_OPS = ['gt', 'gte', 'lt', 'lte', 'eq'];
+const LEAF_OPS = ['equals', 'in', 'checked', 'includes', 'filled', ...COMPARE_OPS];
 const OPERATORS = [...LEAF_OPS, 'all', 'any', 'not', 'ref'];
 const FIELD_OPS = {
   equals: ['select', 'text'],
   in: ['select', 'text'],
   checked: ['checkbox'],
   includes: ['multiselect'],
-  filled: ['text', 'textarea', 'date', 'select', 'multiselect', 'group'],
+  filled: ['text', 'textarea', 'date', 'select', 'multiselect', 'group', 'number', 'computed'],
+  ...Object.fromEntries(COMPARE_OPS.map(op => [op, NUMERIC])),
 };
 const MAX_DEPTH = 3;
 const MAX_COMBINATIONS = 4096;
@@ -26,7 +31,9 @@ const KEYS = {
   batch: ['label', 'fields', 'filename'],
   field: ['id', 'label', 'type', 'required', 'value', 'help', 'options', 'when'],
   group: ['id', 'label', 'type', 'required', 'value', 'help', 'when', 'fields', 'min_rows', 'max_rows'],
-  subfield: ['id', 'label', 'type', 'required', 'help', 'options'],
+  number: ['id', 'label', 'type', 'required', 'value', 'help', 'when', 'decimals', 'unit'],
+  computed: ['id', 'label', 'type', 'expr', 'help', 'when', 'decimals', 'unit'],
+  subfield: ['id', 'label', 'type', 'required', 'help', 'options', 'decimals', 'unit'],
   section: ['heading', 'paragraphs', 'when'],
   source: ['title', 'url'],
   derived: ['cases', 'default'],
@@ -39,7 +46,7 @@ const MAX_ROWS = 50;
 const MAX_SUBFIELDS = 8;
 const MAX_BLOCK_PARAGRAPHS = 10;
 const MAX_BATCH_FIELDS = 20;
-const BATCH_TYPES = TYPES_V1;
+const BATCH_TYPES = [...TYPES_V1, 'number'];
 const own = (object, key) => Boolean(object) && Object.prototype.hasOwnProperty.call(object, key);
 
 export function fail(message) { throw new Error(message); }
@@ -86,7 +93,11 @@ export function fieldsOf(condition, spec, out = new Set()) {
   else if (Array.isArray(condition.any)) condition.any.forEach(item => fieldsOf(item, spec, out));
   else if (own(condition, 'not')) fieldsOf(condition.not, spec, out);
   else if (own(condition, 'ref')) fieldsOf(spec.conditions?.[condition.ref], spec, out);
-  else if (typeof condition.field === 'string') out.add(condition.field);
+  else if (typeof condition.field === 'string') {
+    out.add(condition.field);
+    const op = COMPARE_OPS.find(key => own(condition, key));
+    if (op && typeof condition[op] === 'string') out.add(condition[op]);
+  }
   return out;
 }
 
@@ -143,6 +154,13 @@ function checkCondition(condition, path, ctx, opts) {
     condition.in.forEach((v, i) => value(v, `${path}.in[${i}]`));
   }
   if ((op === 'checked' || op === 'filled') && typeof condition[op] !== 'boolean') fail(`${path}.${op} debe ser booleano`);
+  if (COMPARE_OPS.includes(op)) {
+    const target = condition[op];
+    if (typeof target === 'number') { if (!Number.isFinite(target)) fail(`${path}.${op}: número no válido`); return; }
+    const other = typeof target === 'string' ? ctx.fields.get(target) : null;
+    if (!other || !NUMERIC.includes(other.type)) fail(`${path}.${op}: ${JSON.stringify(target)} no es un campo numérico`);
+    if (opts.before && !opts.before.has(target)) fail(`${path}.${op}: ${target} debe declararse antes del campo que lo usa en when`);
+  }
 }
 
 // `group`: grupo cuyos subcampos pueden usarse (plantillas de un `repeat`).
@@ -177,12 +195,46 @@ function checkField(field, i, ctx) {
   if (field.type === 'select' || field.type === 'multiselect') checkOptions(field.options, `${path}.options`);
   else if (field.type === 'checkbox' && field.options !== undefined) fail(`${path}: un checkbox no admite options`);
   if (field.type === 'group') return checkGroup(field, path, ctx);
-  if (field.value !== undefined) {
+  if (NUMERIC.includes(field.type)) checkNumberFormat(field, path);
+  if (field.type === 'computed') {
+    if (field.required !== undefined) fail(`${path}: un campo computed no admite required`);
+    if (field.value !== undefined) fail(`${path}: un campo computed no admite value`);
+    checkFormula(field, path, ctx);
+  }
+  if (field.type === 'number' && field.value !== undefined) {
+    if (typeof field.value !== 'string' || Number.isNaN(parseNumber(field.value))) fail(`${path}.value debe ser un número válido`);
+  } else if (field.value !== undefined) {
     if (field.type === 'checkbox') { if (typeof field.value !== 'boolean') fail(`${path}.value debe ser booleano`); }
     else if (field.type === 'multiselect') { if (!Array.isArray(field.value) || field.value.some(x => !field.options.includes(x))) fail(`${path}.value debe ser una lista de opciones`); }
     else if (typeof field.value !== 'string') fail(`${path}.value debe ser texto`);
   }
   if (field.when !== undefined) ctx.needV2(`${path}.when`);
+}
+
+function checkNumberFormat(field, path) {
+  if (field.decimals !== undefined && (!Number.isInteger(field.decimals) || field.decimals < 0 || field.decimals > 6)) fail(`${path}.decimals debe ser un entero entre 0 y 6`);
+  if (field.unit !== undefined && (typeof field.unit !== 'string' || !field.unit.trim() || field.unit.length > 30)) fail(`${path}.unit debe ser un texto de 1 a 30 caracteres`);
+}
+
+// Fórmula de un `computed`: sintaxis y referencias a campos numéricos declarados antes
+// (ctx.fields solo contiene, en este punto, los campos anteriores).
+function checkFormula(field, path, ctx) {
+  if (typeof field.expr !== 'string' || !field.expr.trim()) fail(`${path}.expr: fórmula obligatoria`);
+  let result;
+  try { result = compile(field.expr); } catch (error) { fail(`${path}.expr: ${error.message}`); }
+  for (const id of result.refs) {
+    const other = ctx.fields.get(id);
+    if (!other) fail(ctx.allIds.has(id) ? `${path}.expr: ${id} debe declararse antes de este campo` : `${path}.expr: identificador desconocido ${id}`);
+    if (!NUMERIC.includes(other.type)) fail(`${path}.expr: ${id} no es un campo numérico`);
+  }
+  for (const { group, sub } of result.sums) {
+    const target = ctx.fields.get(group);
+    if (!target) fail(ctx.allIds.has(group) ? `${path}.expr: ${group} debe declararse antes de este campo` : `${path}.expr: identificador desconocido ${group}`);
+    if (target.type !== 'group') fail(`${path}.expr: sum necesita grupo.subcampo y ${group} no es un grupo`);
+    const column = target.fields.find(item => item.id === sub);
+    if (!column) fail(`${path}.expr: ${sub} no es un subcampo de ${group}`);
+    if (column.type !== 'number') fail(`${path}.expr: ${group}.${sub} debe ser un subcampo number`);
+  }
 }
 
 function checkOptions(options, path) {
@@ -206,6 +258,8 @@ function checkGroup(group, path, ctx) {
     if (sub.help !== undefined) nonempty(sub.help, `${p}.help`, 400);
     if (sub.type === 'select') checkOptions(sub.options, `${p}.options`);
     else if (sub.options !== undefined) fail(`${p}: solo un subcampo select admite options`);
+    if (sub.type === 'number') checkNumberFormat(sub, p);
+    else if (sub.decimals !== undefined || sub.unit !== undefined) fail(`${p}: decimals y unit solo se admiten en subcampos number`);
   }
   const rowsLimit = (key, fallback) => {
     if (group[key] === undefined) return fallback;
@@ -226,6 +280,7 @@ function checkGroup(group, path, ctx) {
         if (!sub) fail(`${p}: ${key} no es un subcampo del grupo`);
         if (typeof value !== 'string') fail(`${p}.${key} debe ser texto`);
         if (sub.type === 'select' && value && !sub.options.includes(value)) fail(`${p}.${key}: "${value}" no es una opción`);
+        if (sub.type === 'number' && Number.isNaN(parseNumber(value))) fail(`${p}.${key}: "${value}" no es un número válido`);
       }
     }
   }
@@ -294,7 +349,8 @@ export function unknownKeys(spec) {
   };
   const each = (list, allowed, prefix) => { if (Array.isArray(list)) list.forEach((item, i) => check(item, allowed, `${prefix}[${i}]`)); };
   check(spec, KEYS.spec, '');
-  if (Array.isArray(spec.fields)) spec.fields.forEach((field, i) => check(field, field?.type === 'group' ? KEYS.group : KEYS.field, `fields[${i}]`));
+  const fieldKeys = type => (['group', 'number', 'computed'].includes(type) ? KEYS[type] : KEYS.field);
+  if (Array.isArray(spec.fields)) spec.fields.forEach((field, i) => check(field, fieldKeys(field?.type), `fields[${i}]`));
   each(spec.sections, KEYS.section, 'sections');
   each(spec.sources, KEYS.source, 'sources');
   check(spec.batch, KEYS.batch, 'batch');
@@ -319,7 +375,8 @@ export function validate(spec) {
     if (typeof id !== 'string' || !ID.test(id) || names.has(id)) fail(`${path} no válido o duplicado`);
     names.add(id);
   };
-  const ctx = { spec, fields, subfields: new Map(), claim, needV2: path => { if (!v2) fail(`${path}: requiere schema_version 2`); } };
+  const allIds = new Set(Array.isArray(spec.fields) ? spec.fields.map(field => field?.id) : []);
+  const ctx = { spec, fields, subfields: new Map(), allIds, claim, needV2: path => { if (!v2) fail(`${path}: requiere schema_version 2`); } };
   nonempty(spec.title, 'title', 180);
   if (spec.subtitle !== undefined) nonempty(spec.subtitle, 'subtitle', 220);
   if (!Array.isArray(spec.fields) || spec.fields.length < 1 || spec.fields.length > max) fail(`fields debe contener entre 1 y ${max} campos`);
@@ -428,6 +485,19 @@ function citedValues(spec, id) {
   return [...values];
 }
 
+// Campos de los que depende un campo: su `when` y, en un `computed`, su fórmula.
+function dependencies(field, spec) {
+  const out = field.when ? fieldsOf(field.when, spec) : new Set();
+  if (field.type === 'computed') {
+    try {
+      const { refs, sums } = compile(field.expr);
+      refs.forEach(id => out.add(id));
+      sums.forEach(({ group }) => out.add(group));
+    } catch { /* el validador ya informa del error de sintaxis */ }
+  }
+  return out;
+}
+
 function involved(spec, conditions) {
   const out = new Set();
   conditions.forEach(condition => fieldsOf(condition, spec, out));
@@ -435,8 +505,8 @@ function involved(spec, conditions) {
   while (grew) {
     grew = false;
     for (const field of spec.fields) {
-      if (!out.has(field.id) || !field.when) continue;
-      for (const id of fieldsOf(field.when, spec)) if (!out.has(id)) { out.add(id); grew = true; }
+      if (!out.has(field.id)) continue;
+      for (const id of dependencies(field, spec)) if (!out.has(id)) { out.add(id); grew = true; }
     }
   }
   return spec.fields.filter(field => out.has(field.id));
@@ -445,7 +515,12 @@ function involved(spec, conditions) {
 function domain(field, spec) {
   if (field.type === 'checkbox') return [false, true];
   if (field.type === 'select') return ['', ...field.options];
-  if (field.type === 'group') return [[], [{ [field.fields[0].id]: 'x' }]];
+  if (field.type === 'group') {
+    const sub = field.fields.find(item => item.type === 'number') || field.fields[0];
+    return [[], [{ [sub.id]: sub.type === 'number' ? '1' : 'x' }]];
+  }
+  if (field.type === 'number') return ['', '1'];
+  if (field.type === 'computed') return [null];
   if (field.type === 'text') return ['', ...citedValues(spec, field.id), '\u0000otro'];
   if (field.type === 'multiselect') {
     const cited = citedValues(spec, field.id);
@@ -473,7 +548,34 @@ function reachable(spec, conditions) {
   }
 }
 
-export function reachability(spec) {
+// Las comparaciones numéricas se tratan como indeterminadas: cada una pasa a ser una
+// casilla libre, para no resolver aritmética al buscar combinaciones.
+function relax(spec) {
+  const out = structuredClone(spec);
+  const free = [];
+  const walk = condition => {
+    if (!condition || typeof condition !== 'object') return condition;
+    if (Array.isArray(condition.all)) return { all: condition.all.map(walk) };
+    if (Array.isArray(condition.any)) return { any: condition.any.map(walk) };
+    if (own(condition, 'not')) return { not: walk(condition.not) };
+    if (!COMPARE_OPS.some(op => own(condition, op))) return condition;
+    const id = `__comparacion_${free.length}`;
+    free.push({ id, label: id, type: 'checkbox' });
+    return { field: id, checked: true };
+  };
+  for (const name of Object.keys(out.conditions || {})) out.conditions[name] = walk(out.conditions[name]);
+  for (const field of out.fields) if (field.when) field.when = walk(field.when);
+  for (const definition of Object.values(out.derived || {})) for (const item of definition.cases) item.when = walk(item.when);
+  for (const section of out.sections) {
+    if (section.when) section.when = walk(section.when);
+    for (const paragraph of section.paragraphs) if (typeof paragraph === 'object' && paragraph.when) paragraph.when = walk(paragraph.when);
+  }
+  out.fields = [...free, ...out.fields];
+  return out;
+}
+
+export function reachability(original) {
+  const spec = relax(original);
   const unreachable = [];
   const skipped = [];
   for (const [i, section] of spec.sections.entries()) {
@@ -523,6 +625,20 @@ function texts(spec) {
   return out;
 }
 
+// Identificadores que aparecen en el divisor de alguna división.
+function divisors(node, out = new Set()) {
+  if (!node) return out;
+  if (node.type === 'op' && node.op === '/') collectRefs(node.right, out);
+  for (const child of [node.left, node.right, node.value, ...(node.args || [])]) if (child && typeof child === 'object') divisors(child, out);
+  return out;
+}
+
+function collectRefs(node, out) {
+  if (!node || typeof node !== 'object') return;
+  if (node.type === 'ref') out.add(node.id);
+  for (const child of [node.left, node.right, node.value, ...(node.args || [])]) collectRefs(child, out);
+}
+
 export function lint(spec) {
   const warnings = spec.schema_version === 1 ? unknownKeys(spec) : [];
   const inserted = new Set();
@@ -533,14 +649,25 @@ export function lint(spec) {
   }
   const conditioned = new Set();
   allConditions(spec).forEach(condition => fieldsOf(condition, spec, conditioned));
+  const summed = new Set();
+  for (const [i, field] of spec.fields.entries()) {
+    if (field.type !== 'computed') continue;
+    const { ast, refs, sums } = compile(field.expr);
+    refs.forEach(id => conditioned.add(id));
+    sums.forEach(({ group, sub }) => { summed.add(group); summed.add(sub); });
+    for (const id of divisors(ast)) {
+      const other = spec.fields.find(item => item.id === id);
+      if (other && (other.type === 'computed' || !other.required || other.when)) warnings.push(`fields[${i}].expr: divide por ${id}, que puede quedar vacío`);
+    }
+  }
   const repeats = spec.sections.flatMap(section => section.paragraphs.filter(p => typeof p === 'object' && p.repeat));
   for (const field of spec.fields) {
     if (field.type === 'group') {
       const uses = repeats.filter(p => p.repeat === field.id);
-      if (!uses.length) { warnings.push(`campo ${field.id}: el grupo no se usa en ningún párrafo repeat`); continue; }
+      if (!uses.length && !summed.has(field.id)) { warnings.push(`campo ${field.id}: el grupo no se usa en ningún párrafo repeat ni fórmula`); continue; }
       const shown = new Set(uses.flatMap(p => (p.as === 'table' ? (p.columns || field.fields.map(sub => sub.id)) : [])));
       for (const sub of field.fields) {
-        if (!shown.has(sub.id) && !inserted.has(sub.id)) warnings.push(`campo ${field.id}: el subcampo ${sub.id} no aparece en ninguna columna ni plantilla`);
+        if (!shown.has(sub.id) && !inserted.has(sub.id) && !summed.has(sub.id)) warnings.push(`campo ${field.id}: el subcampo ${sub.id} no aparece en ninguna columna ni plantilla`);
       }
       continue;
     }

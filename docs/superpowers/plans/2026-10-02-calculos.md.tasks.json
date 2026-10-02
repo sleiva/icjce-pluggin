@@ -4,13 +4,13 @@
     {
       "id": 0,
       "subject": "Task 1: Módulo `assets/numbers.js`",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Crear `DocNumbers` con lectura y formato de números en español y un analizador seguro de fórmulas.\n\n**Files:**\n- Create: `skills/generar-documento-auditoria/assets/numbers.js`\n- Test: `tests/generar-documento/numbers.test.mjs`\n\n**Acceptance Criteria:**\n- [ ] `node --test tests/generar-documento/*.test.mjs` → `# pass 76`, `# fail 0`.\n- [ ] `grep -c 'u00a0' skills/generar-documento-auditoria/assets/numbers.js` → `1`; el archivo no usa `eval`, `Function` ni `toLocaleString`.\n- [ ] `formatNumber(1.005, 2)` → `\"1,01\"`; `parseNumber(\"1.234\")` → `1234`; `compile(\"(1 + 2\")` lanza `se esperaba \")\" en la posición 7`.\n\n**Verify:** `node --test tests/generar-documento/*.test.mjs` → `# pass 76`, `# fail 0`\n\n```json:metadata\n{\"files\": [\"skills/generar-documento-auditoria/assets/numbers.js\", \"tests/generar-documento/numbers.test.mjs\"], \"verifyCommand\": \"node --test tests/generar-documento/*.test.mjs\", \"acceptanceCriteria\": [\"suite reports # pass 76 and # fail 0\", \"numbers.js keeps \\\\u00a0 as ASCII escape and uses no eval/Function/toLocaleString\", \"formatNumber(1.005,2)=1,01; parseNumber('1.234')=1234; compile('(1 + 2') reports position 7\"], \"modelTier\": \"mechanical\"}\n```"
     },
     {
       "id": 1,
       "subject": "Task 2: Números y cálculos en el evaluador",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Calcular los `computed` en orden, marcar los `number` mal escritos, evaluar comparaciones y formatear números en textos y tablas.\n\n**Files:**\n- Modify: `skills/generar-documento-auditoria/assets/evaluator.js` (sustitución completa)\n- Create: `tests/generar-documento/fixtures/materialidad.v2.json`\n- Test: `tests/generar-documento/computed.test.mjs`\n\n**Acceptance Criteria:**\n- [ ] `node --test tests/generar-documento/*.test.mjs` → `# pass 82`, `# fail 0` (las pruebas existentes no cambian).\n- [ ] Con base «2.000.000» y porcentaje «1,5»: `materialidad` = 30000, `ejecucion` = 22500, `umbral` = 1500, y el texto sale `30.000,00\\u00a0€`.\n- [ ] `effectiveData` devuelve `invalid.base === true` para «mucho»; la tabla de incorrecciones formatea `25.000` como `25.000,00\\u00a0€` y el total es `32.500,50\\u00a0€`.\n\n**Verify:** `node --test tests/generar-documento/*.test.mjs` → `# pass 82`, `# fail 0`\n\n```json:metadata\n{\"files\": [\"skills/generar-documento-auditoria/assets/evaluator.js\", \"tests/generar-documento/computed.test.mjs\", \"tests/generar-documento/fixtures/materialidad.v2.json\"], \"verifyCommand\": \"node --test tests/generar-documento/*.test.mjs\", \"acceptanceCriteria\": [\"suite reports # pass 82 and # fail 0 with existing tests unchanged\", \"materialidad/ejecucion/umbral = 30000/22500/1500 and formatted 30.000,00 €\", \"invalid.base true for 'mucho'; table cells and total formatted\"], \"modelTier\": \"mechanical\"}\n```",
       "blockedBy": [
         0
@@ -19,7 +19,7 @@
     {
       "id": 2,
       "subject": "Task 3: Números y cálculos en el validador",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Validar campos `number` y `computed`, sus fórmulas y comparaciones, subcampos y lote numéricos, con alcanzabilidad que no resuelve aritmética y avisos nuevos.\n\n**Files:**\n- Modify: `skills/generar-documento-auditoria/bin/validar-plantilla.mjs` (sustitución completa)\n- Test: `tests/generar-documento/computed-validator.test.mjs`\n\n**Acceptance Criteria:**\n- [ ] `node --test tests/generar-documento/*.test.mjs` → `# pass 91`, `# fail 0`; `grep -c 'u0300' skills/generar-documento-auditoria/bin/validar-plantilla.mjs` → `1`.\n- [ ] `node skills/generar-documento-auditoria/bin/generar-documento.mjs validate tests/generar-documento/fixtures/materialidad.v2.json` imprime `Plantilla válida: Cálculo de materialidad de prueba` sin `Aviso:`.\n- [ ] Una fórmula `base * (porcentaje / 100` falla con `fields[3].expr: se esperaba \")\" en la posición 25`; `batch.fields` con un `computed` falla con `el campo materialidad es computed y no puede venir del listado`.\n\n**Verify:** `node --test tests/generar-documento/*.test.mjs` → `# pass 91`, `# fail 0`\n\n```json:metadata\n{\"files\": [\"skills/generar-documento-auditoria/bin/validar-plantilla.mjs\", \"tests/generar-documento/computed-validator.test.mjs\"], \"verifyCommand\": \"node --test tests/generar-documento/*.test.mjs\", \"acceptanceCriteria\": [\"suite reports # pass 91 and # fail 0; validator keeps ASCII accent escape\", \"materialidad.v2.json validates with no Aviso lines\", \"syntax error reports fields[3].expr position 25; computed in batch.fields rejected\"], \"modelTier\": \"mechanical\"}\n```",
       "blockedBy": [
         1
@@ -28,7 +28,7 @@
     {
       "id": 3,
       "subject": "Task 4: Números en la lectura de listados",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Que las columnas de campos `number` del lote acepten formato español y números de Excel, y que los números de Excel en campos de texto conserven sus dígitos.\n\n**Files:**\n- Modify: `skills/generar-documento-auditoria/assets/tabular.js` (sustitución completa)\n- Modify: `tests/generar-documento/tabular.test.mjs` (sustitución completa)\n\n**Acceptance Criteria:**\n- [ ] `node --test tests/generar-documento/*.test.mjs` → `# pass 92`, `# fail 0`; `grep -c 'u0300' skills/generar-documento-auditoria/assets/tabular.js` → `1`.\n- [ ] Un `28001` de Excel en un campo de texto queda «28001»; `1234.5` queda «1234,5»; un `1.234` de Excel en un campo `number` se guarda «1,234»; un valor «mucho» en una columna `number` da `Fila 4: \"mucho\" no es un número válido para Saldo`.\n\n**Verify:** `node --test tests/generar-documento/*.test.mjs` → `# pass 92`, `# fail 0`\n\n```json:metadata\n{\"files\": [\"skills/generar-documento-auditoria/assets/tabular.js\", \"tests/generar-documento/tabular.test.mjs\"], \"verifyCommand\": \"node --test tests/generar-documento/*.test.mjs\", \"acceptanceCriteria\": [\"suite reports # pass 92 and # fail 0; tabular keeps ASCII accent escape\", \"Excel 28001 in text stays 28001, 1234.5 becomes 1234,5, number column keeps 1,234 and rejects 'mucho' with the row error\"], \"modelTier\": \"mechanical\"}\n```",
       "blockedBy": [
         2
@@ -37,7 +37,7 @@
     {
       "id": 4,
       "subject": "Task 5: Números y cálculos en el asistente",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Mostrar los campos `number` con teclado numérico y unidad, marcar y bloquear los números mal escritos, mostrar los `computed` como valores que se recalculan e incrustar `numbers.js` en el HTML.\n\n**Files:**\n- Modify: `skills/generar-documento-auditoria/assets/assistant-runtime.js` (sustitución completa)\n- Modify: `skills/generar-documento-auditoria/assets/assistant.html` (hueco `/*__NUMBERS__*/` y estilos)\n- Modify: `skills/generar-documento-auditoria/bin/generar-documento.mjs` (función `render`)\n- Test: `tests/generar-documento/render-numbers.test.mjs`\n\n**Acceptance Criteria:**\n- [ ] `node --test tests/generar-documento/*.test.mjs` → `# pass 93`, `# fail 0`; `grep -c 'u0300' skills/generar-documento-auditoria/assets/assistant-runtime.js` → `1`.\n- [ ] Comprobación A (paso 5, `m.html`) devuelve: `mat0: \"—\"`, `mat: \"30.000,00 €\"`, `ejec: \"22.500,00 €\"`, `umbral: \"1.500 €\"`, `invalidShown: true`, `mat2: \"—\"`, `blockMsg: \"Escribe un número válido en «Cifra de negocios»\"`, `total: \"32.500,50 €\"`, `cells: [\"Provisión\", \"25.000,00 €\", \"Ajuste\", \"7.500,50 €\"]`, `conclusion` con «superan», `subInvalid: true`, `subMsg: \"Escribe un número válido en «Incorrecciones no corregidas»\"`, `conclusion2` con «no superan», `step2: true` (el espacio antes de «€» es U+00A0).\n- [ ] Comprobación B (paso 5, `b2.html`) devuelve `errors: [\"Fila 3: \\\"mucho\\\" no es un número válido para Saldo\"]` y `saldo` terminado en `1.234,50 €.`.\n\n**Verify:** `node --test tests/generar-documento/*.test.mjs` → `# pass 93`, `# fail 0`\n\n```json:metadata\n{\"files\": [\"skills/generar-documento-auditoria/assets/assistant-runtime.js\", \"skills/generar-documento-auditoria/assets/assistant.html\", \"skills/generar-documento-auditoria/bin/generar-documento.mjs\", \"tests/generar-documento/render-numbers.test.mjs\"], \"verifyCommand\": \"node --test tests/generar-documento/*.test.mjs\", \"acceptanceCriteria\": [\"suite reports # pass 93 and # fail 0; runtime keeps ASCII accent escape\", \"browser check A on materialidad returns the listed values\", \"browser check B on number saldo batch returns the listed values\"], \"modelTier\": \"standard\"}\n```",
       "blockedBy": [
         3
@@ -46,12 +46,12 @@
     {
       "id": 5,
       "subject": "Task 6: Documentación de la habilidad y validación del repositorio",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Documentar números, cálculos y comparaciones y su traducción desde los modelos, y comprobar `assets/numbers.js` en `scripts/validate.py`.\n\n**Files:**\n- Modify: `skills/generar-documento-auditoria/references/esquema-json.md` (sustitución completa)\n- Modify: `skills/generar-documento-auditoria/references/analisis-modelo.md` (sustitución completa)\n- Modify: `skills/generar-documento-auditoria/SKILL.md` (sustitución completa)\n- Modify: `scripts/validate.py` (lista de archivos del renderizador)\n\n**Acceptance Criteria:**\n- [ ] `python3 scripts/validate.py` termina con `OK: plugin schemas; OpenCode and Hermes MCP; metadata, marketplace, both skills, renderer assets and tests` tras `# pass 93`.\n- [ ] `references/esquema-json.md` contiene `## Números y cálculos (v2)`; `analisis-modelo.md` traduce la fila de total a `computed` con `sum`; `SKILL.md` menciona `number`, `computed` y las comparaciones.\n\n**Verify:** `python3 scripts/validate.py` → última línea empieza por `OK:`\n\n```json:metadata\n{\"files\": [\"skills/generar-documento-auditoria/references/esquema-json.md\", \"skills/generar-documento-auditoria/references/analisis-modelo.md\", \"skills/generar-documento-auditoria/SKILL.md\", \"scripts/validate.py\"], \"verifyCommand\": \"python3 scripts/validate.py\", \"acceptanceCriteria\": [\"validate.py ends with OK after 93 passing tests\", \"esquema-json.md has Números y cálculos (v2); analisis-modelo maps total row to computed sum; SKILL.md mentions number, computed and comparisons\"], \"modelTier\": \"mechanical\"}\n```",
       "blockedBy": [
         4
       ]
     }
   ],
-  "lastUpdated": "2026-10-02T07:12:56"
+  "lastUpdated": "2026-10-02T07:28:32"
 }

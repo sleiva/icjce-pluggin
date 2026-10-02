@@ -1,0 +1,68 @@
+{
+  "plan": "docs/superpowers/plans/2026-10-02-revisar-memoria.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Cuentas sintéticas y resultado esperado",
+      "status": "pending",
+      "blockedBy": [],
+      "metadata": {
+        "files": [
+          "tests/revisar-memoria/cuentas-sinteticas.md",
+          "tests/revisar-memoria/esperado.md",
+          "docs/superpowers/specs/2026-10-02-revisar-memoria-design.md"
+        ],
+        "modelTier": "mechanical"
+      }
+    },
+    {
+      "id": 2,
+      "subject": "SKILL.md y referencias",
+      "status": "pending",
+      "blockedBy": [],
+      "metadata": {
+        "files": [
+          "skills/revisar-memoria-cuentas/SKILL.md",
+          "skills/revisar-memoria-cuentas/references/marcos-y-umbrales.md",
+          "skills/revisar-memoria-cuentas/references/cruces-basicos.md",
+          "skills/revisar-memoria-cuentas/references/formato-informe.md"
+        ],
+        "modelTier": "mechanical"
+      }
+    },
+    {
+      "id": 3,
+      "subject": "Integración en validación, instalación y README",
+      "status": "pending",
+      "blockedBy": [
+        2
+      ],
+      "metadata": {
+        "files": [
+          "scripts/validate.py",
+          "scripts/install_opencode.py",
+          "README.md"
+        ],
+        "modelTier": "mechanical",
+        "verifyCommand": "python3 scripts/validate.py"
+      }
+    },
+    {
+      "id": 4,
+      "subject": "Prueba de comportamiento (controlador)",
+      "status": "pending",
+      "blockedBy": [
+        1,
+        2,
+        3
+      ],
+      "metadata": {
+        "files": [
+          "tests/revisar-memoria/resultados.md"
+        ],
+        "modelTier": "standard",
+        "executor": "controller"
+      }
+    }
+  ]
+}

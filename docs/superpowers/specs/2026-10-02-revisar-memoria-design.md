@@ -70,7 +70,7 @@ Se puede exportar a Word con la habilidad `docx` del cliente si existe.
 - `scripts/install_opencode.py`: añadir la habilidad a `SKILLS`.
 - `README.md`: describir la habilidad y su instalación en Hermes.
 - Prueba de comportamiento (método de `writing-skills`):
-  - `tests/revisar-memoria/cuentas-sinteticas.md`: cuentas anuales inventadas de una pyme (balance, cuenta de pérdidas y ganancias y memoria) con cinco omisiones sembradas: falta el periodo medio de pago; el cuadro de inmovilizado no cuadra con el balance; existencias significativas sin nota; falta el número medio de empleados por sexo; la aplicación del resultado no coincide con el resultado.
+  - `tests/revisar-memoria/cuentas-sinteticas.md`: cuentas anuales inventadas de una pyme (balance, cuenta de pérdidas y ganancias y memoria) con cinco omisiones sembradas: falta el periodo medio de pago; el cuadro de inmovilizado no cuadra con el balance; existencias significativas sin nota; hay deudas con empresas del grupo y no hay nota de operaciones con partes vinculadas; la aplicación del resultado no coincide con el resultado.
   - `tests/revisar-memoria/esperado.md`: las cinco detecciones esperadas y los requisitos de forma (marco determinado y justificado, fuentes por requisito, estados válidos, aviso final, sin opinión de auditoría).
   - Un subagente revisa sin la habilidad y otro con ella; se comparan detecciones, citas, formato y reglas. Los subagentes no tienen el MCP autorizado: la prueba cubre el modo sin MCP (búsqueda en el BOE). La prueba con MCP la hace el usuario en Claude con el conector autorizado.
 

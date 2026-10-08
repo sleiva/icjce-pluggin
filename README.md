@@ -3,7 +3,7 @@
 El repositorio contiene tres habilidades compartidas por los cuatro clientes:
 
 - `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Parte del análisis técnico del modelo, busca siempre circulares y guías de actuación relacionadas en el MCP del ICJCE, contrasta las fuentes pertinentes y busca en la web información vigente o complementaria cuando está disponible. Conserva cinco referencias temáticas.
-- `generar-documento-auditoria` localiza primero un modelo con `buscar_modelos_informe`, lee el texto con `leer_documento` y usa el criterio técnico del modelo para adaptarlo al encargo. Contrasta vigencia y requisitos en fuentes web cuando están disponibles. Prepara un asistente HTML autónomo por conversación que muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
+- `generar-documento-auditoria` se activa al pedir ayuda para preparar un informe, carta u otro documento de un encargo concreto, aunque no se pida «HTML». Localiza primero un modelo con `buscar_modelos_informe`, lo lee con `leer_documento` y usa el criterio técnico del modelo para adaptarlo al encargo. Los datos pendientes quedan como campos de un asistente HTML autónomo, que muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
 - `revisar-memoria-cuentas` revisa la memoria de unas cuentas anuales frente al modelo de su marco (PGC normal o abreviado, PGC PYMES, NOFCAC o adaptación sectorial). Usa el conocimiento contable del modelo para analizar las cuentas, determina el marco con los umbrales vigentes, contrasta nota a nota con el texto oficial del MCP y fuentes web, cruza cifras con el balance y la cuenta de pérdidas y ganancias y devuelve en el chat un informe de omisiones con la fuente de cada requisito. No emite opinión de auditoría.
 
 Los clientes quedan configurados para autenticarse con OAuth mediante Auth0. El servidor
@@ -173,8 +173,7 @@ Referencias: [Hermes Desktop](https://hermes-agent.nousresearch.com/docs/user-gu
    las URLs devueltas, sin inventarlas.
 4. Sin conexión MCP, comprueba que avisa de la limitación y que puede continuar con
    fuentes oficiales web verificadas, sin fingir una consulta al MCP.
-5. Pide preparar una carta o informe a partir de un modelo. Comprueba que se entrega un
-   HTML con formulario, botón **Generar documento**, vista del texto y exportación.
+5. Pide «ayúdame con un informe de procedimientos acordados para Ecoembes, revisión completa no retail» sin mencionar HTML ni aportar todos los datos del encargo. Comprueba que se activa `generar-documento-auditoria` y se entrega un HTML con los datos pendientes como campos, botón **Generar documento**, vista del texto y exportación.
 6. Pide revisar la memoria de unas cuentas anuales (por ejemplo, las cuentas inventadas de
    [`tests/revisar-memoria/cuentas-sinteticas.md`](tests/revisar-memoria/cuentas-sinteticas.md)).
    Comprueba que determina el marco, consulta `indice_norma` antes de `leer_articulo` y

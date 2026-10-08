@@ -2,9 +2,9 @@
 
 El repositorio contiene tres habilidades compartidas por los cuatro clientes:
 
-- `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Combina el análisis del modelo, los textos del MCP del ICJCE y la búsqueda web de fuentes oficiales cuando está disponible. Conserva cinco referencias temáticas.
-- `generar-documento-auditoria` localiza primero un modelo con `buscar_modelos_informe`, lee el texto con `leer_documento` y extrae los datos que debe aportar el auditor. A partir de ese análisis prepara un asistente HTML autónomo por conversación. Muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
-- `revisar-memoria-cuentas` revisa la memoria de unas cuentas anuales frente al modelo de su marco (PGC normal o abreviado, PGC PYMES, NOFCAC o adaptación sectorial). Determina el marco con los umbrales vigentes, contrasta nota a nota con el índice y el texto oficial del MCP, cruza cifras con el balance y la cuenta de pérdidas y ganancias y devuelve en el chat un informe de omisiones con la fuente de cada requisito. No emite opinión de auditoría.
+- `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Parte del análisis técnico del modelo, contrasta con el MCP del ICJCE cuando aporta textos pertinentes y busca en la web información vigente o complementaria cuando está disponible. Conserva cinco referencias temáticas.
+- `generar-documento-auditoria` localiza primero un modelo con `buscar_modelos_informe`, lee el texto con `leer_documento` y usa el criterio técnico del modelo para adaptarlo al encargo. Contrasta vigencia y requisitos en fuentes web cuando están disponibles. Prepara un asistente HTML autónomo por conversación que muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
+- `revisar-memoria-cuentas` revisa la memoria de unas cuentas anuales frente al modelo de su marco (PGC normal o abreviado, PGC PYMES, NOFCAC o adaptación sectorial). Usa el conocimiento contable del modelo para analizar las cuentas, determina el marco con los umbrales vigentes, contrasta nota a nota con el texto oficial del MCP y fuentes web, cruza cifras con el balance y la cuenta de pérdidas y ganancias y devuelve en el chat un informe de omisiones con la fuente de cada requisito. No emite opinión de auditoría.
 
 Los clientes quedan configurados para autenticarse con OAuth mediante Auth0. El servidor
 MCP también acepta una API key para otras integraciones, pero este plugin no la solicita ni
@@ -260,4 +260,3 @@ Las referencias están en
 `cruces-basicos.md` (partidas que obligan a informar y cifras que deben coincidir) y
 `formato-informe.md` (estructura del informe). La prueba de comportamiento y su
 procedimiento manual están en [`tests/revisar-memoria/`](tests/revisar-memoria/README.md).
-

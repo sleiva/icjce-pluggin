@@ -7,6 +7,8 @@ description: Genera un asistente HTML autónomo para preparar informes, cartas y
 
 Convierte un modelo documental en un **archivo HTML por conversación**. La persona rellena los datos, pulsa **Generar documento**, ve el texto terminado y puede descargar un DOCX real o usar la impresión del navegador para **Guardar como PDF**. El archivo funciona sin conexión y no transmite lo introducido.
 
+**Aplica tu conocimiento y criterio técnico de auditoría** para interpretar el encargo, escoger entre variantes y detectar datos o decisiones profesionales que el modelo no resuelve por sí solo. El modelo del ICJCE sirve como texto de referencia, no sustituye ese análisis. Cuando estén disponibles, contrasta en fuentes web fiables la vigencia y los requisitos relevantes fuera del corpus del MCP. Distingue en el resultado el texto verificado del modelo, los datos aportados por el usuario y las adaptaciones o inferencias que propones; no atribuyas estas últimas al ICJCE.
+
 ## Localizar y leer el modelo en el MCP
 
 Sigue `references/analisis-modelo.md` antes de crear el JSON. **Si el MCP ICJCE está conectado, `buscar_modelos_informe` es el primer paso para cada documento**, incluso si el usuario aportó un ejemplo: permite identificar el modelo y comprobar si existe una versión más apropiada. Descubre las operaciones y sus esquemas en el cliente; los nombres siguientes son operaciones esperadas, no prefijos completos que debas inventar.

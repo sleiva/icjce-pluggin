@@ -7,7 +7,7 @@ description: Úsala cuando el auditor pida revisar la memoria de unas cuentas an
 
 ## Forma de trabajar
 
-Esta habilidad **complementa** tu propio análisis: usa siempre tu conocimiento contable y, cuando esté disponible, la búsqueda web en fuentes oficiales (BOE, ICAC). El MCP del ICJCE te da más potencia: su texto de las normas es **oficial y está actualizado**, así que cuando cubre una norma es la referencia que citas y prevalece sobre lo que recuerdes. Si una fuente no está en el MCP, búscala en la web antes de pedírsela al usuario.
+**Aplica tu conocimiento y criterio técnico contable** para interpretar las cuentas, relacionar cifras y notas, identificar posibles omisiones y explicar al auditor por qué importan. No reduzcas la revisión a copiar requisitos o resultados del MCP. Verifica los requisitos normativos y su vigencia con el texto del MCP del ICJCE y, cuando esté disponible, con fuentes web oficiales (BOE, ICAC), especialmente para información actual o no cubierta por el MCP. Distingue los hechos leídos en las cuentas, los requisitos verificados y tus inferencias o puntos que requieren juicio del auditor. Cuando el MCP cubra una norma, cita su texto oficial y vigente por encima de lo que recuerdes; si no la cubre, búscala en la web antes de pedírsela al usuario.
 
 Para cualquier norma, **empieza por `indice_norma`** (índice oficial y vigente con el `block_id` y el enlace de cada artículo o disposición) y lee el literal con `leer_articulo` antes de afirmar lo que dice. No cites ningún apartado que no aparezca en el índice. Descubre las operaciones y sus parámetros en el propio cliente.
 

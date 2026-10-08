@@ -16,8 +16,9 @@ Para cualquier norma, **empieza por `indice_norma`** (índice oficial y vigente 
 1. **Lee las cuentas** aportadas y anota: entidad, ejercicio y comparativo, forma social, si son individuales o consolidadas, formato de los estados (normal, abreviado, PYMES), sector y las cifras de umbral de los dos últimos ejercicios (total activo, importe neto de la cifra de negocios, número medio de trabajadores).
 2. **Determina el marco** con `references/marcos-y-umbrales.md`. Comprueba los umbrales vigentes en la norma con `indice_norma` y `leer_articulo`; nunca los cites de memoria. Si el formato de las cuentas no corresponde al marco que resulta, esa es la primera observación del informe.
 3. **Obtén el modelo de memoria vigente** del marco con `indice_norma` (por ejemplo `norma='PGC PYMES'` con `filtro='memoria'`) o, en una adaptación sectorial, con `buscar_documentos` y `leer_documento` en la fuente `contabilidad`. Lee en literal las notas que necesites contrastar con precisión. Añade las fuentes complementarias que correspondan al contenido de las cuentas (resoluciones del ICAC por tema, TRLSC, Ley 15/2010 y su resolución sobre el periodo medio de pago).
-4. **Contrasta nota a nota** la memoria con el modelo y aplica los cruces de `references/cruces-basicos.md`.
-5. **Redacta el informe** con la estructura de `references/formato-informe.md`.
+4. **Busca siempre circulares y guías de actuación relacionadas** con el marco, el sector y los asuntos significativos de la memoria mediante `buscar_circulares`, sin incluir en la búsqueda datos confidenciales de la entidad. Prueba una denominación alternativa si no hay resultados y lee con `leer_documento` los documentos que puedan afectar a un requisito o a su aplicación. Descarta los tangenciales. En el informe, menciona por código o título, fecha y enlace cada circular o guía pertinente que haya influido en la revisión; si no localizaste ninguna, dilo brevemente.
+5. **Contrasta nota a nota** la memoria con el modelo y aplica los cruces de `references/cruces-basicos.md`.
+6. **Redacta el informe** con la estructura de `references/formato-informe.md`.
 
 ## Reglas
 

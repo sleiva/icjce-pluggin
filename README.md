@@ -2,7 +2,7 @@
 
 El repositorio contiene tres habilidades compartidas por los cuatro clientes:
 
-- `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Parte del análisis técnico del modelo, contrasta con el MCP del ICJCE cuando aporta textos pertinentes y busca en la web información vigente o complementaria cuando está disponible. Conserva cinco referencias temáticas.
+- `consultar-icjce-mcp` guía las respuestas a consultas de auditoría en España. Parte del análisis técnico del modelo, busca siempre circulares y guías de actuación relacionadas en el MCP del ICJCE, contrasta las fuentes pertinentes y busca en la web información vigente o complementaria cuando está disponible. Conserva cinco referencias temáticas.
 - `generar-documento-auditoria` localiza primero un modelo con `buscar_modelos_informe`, lee el texto con `leer_documento` y usa el criterio técnico del modelo para adaptarlo al encargo. Contrasta vigencia y requisitos en fuentes web cuando están disponibles. Prepara un asistente HTML autónomo por conversación que muestra el documento terminado y exporta DOCX o abre el diálogo para guardar un PDF.
 - `revisar-memoria-cuentas` revisa la memoria de unas cuentas anuales frente al modelo de su marco (PGC normal o abreviado, PGC PYMES, NOFCAC o adaptación sectorial). Usa el conocimiento contable del modelo para analizar las cuentas, determina el marco con los umbrales vigentes, contrasta nota a nota con el texto oficial del MCP y fuentes web, cruza cifras con el balance y la cuenta de pérdidas y ganancias y devuelve en el chat un informe de omisiones con la fuente de cada requisito. No emite opinión de auditoría.
 
